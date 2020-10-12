@@ -23,9 +23,14 @@ import subprocess as sp
 from math import sqrt
 import os
 import tempfile, shutil as sh
+from collections import defaultdict
 
 term_reset= "\u001b[0m"
 term_visu_style= "\u001b[1m\u001b[31m"
+term_bold_yellow= "\u001b[1m\u001b[33m"
+term_bold= "\u001b[1m"
+term_light_blue = "\u001b[94m"
+term_light_green = "\u001b[92m"
 erase_line = "\r\033[2K"
 # erase_line = "\r"+" "*79+"\r"
 
@@ -37,6 +42,19 @@ def sortstr(aset,l="{",r="}"):
     except TypeError:
         s = str(sorted(aset,key=lambda x:( (0 if isinstance(x,int) else 1), str(x)  )))
     return f"{l}{s[1:-1]}{r}"
+
+def inputint(prompt="? ", default=0, upper=None):
+    n = None
+    while n is None:
+        try:
+            n = int(input(prompt) or default)
+            if upper is not None and n > upper:
+                print("Number out of range. Retry.")
+                n = None
+        except ValueError:
+            print("Invalid number. Retry.")
+    return n
+
 
 # return generator of states not in s
 def fresh_gen(s=()):
@@ -53,15 +71,18 @@ class fset(frozenset): # less ugly writing in subset constructions
     def __init__(s,e): super().__init__()
     def __repr__(s): return super().__repr__()[5:-1] if s else '{}'
     def __or__(s,o): return fset(frozenset.__or__(s,o))
+    def __and__(s, o): return fset(frozenset.__and__(s, o))
     def __sub__(s, o): return fset(frozenset.__sub__(s, o))
 
 
 assert str(fset({1,2,3})) == '{1, 2, 3}'
 
-def do_dot(pdfname,pdfprepend):
+def do_dot(pdfname,pdfprepend, store=None):
     assert sh.which("pdftk")
     assert sh.which("dot")
     r = sp.run(["dot", "-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"])  # 3.7 capture output
+    from shutil import copy
+    if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
     assert not r.returncode
     if os.path.isfile(pdfname + ".pdf"):
         sp.run(["cp", pdfname + ".pdf", pdfname + "_copy.pdf"])
@@ -89,7 +110,7 @@ def do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
                 "\n\\tikzset{mathnodes/.style={execute at begin node=\\(,execute at end node=\\)}}" +
                 "\n\\begin{document}\n"+tex+"\n\end{document}")
         testfile and sh.copy(td+"/x.tex",testfile)
-        r = sp.run(["pdflatex", "x.tex"],cwd=td,capture_output=silent)
+        r = sp.run(["pdflatex", "-halt-on-error", "x.tex"],cwd=td,capture_output=silent)
         if sh.which("pdfcrop"):
             sp.run(["pdfcrop", "x.pdf", "xc.pdf"], cwd=td,capture_output=silent)
             sh.move(td + "/xc.pdf", name + "_fig.pdf")
@@ -138,9 +159,9 @@ def tuplepart(t,i):
 # assert tuplepart((0, 1, 2, 3, 4),5) == ((0, 1, 2, 3), 4)
 
 
-def PP(x):
+def PP(x,name=""):
     """print and return a value; for debugging purposes"""
-    print("PP:",x)
+    print(f"PP {name}: ",x)
     return x
 
 def defcst(*l,namespace=globals()):
@@ -183,3 +204,32 @@ def powerset(iterable):
     "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
     return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+
+def powerfset(s):
+    """returns set of fset subsets of s"""
+    return set(
+        chain.from_iterable( map(fset,combinations(s, r)) for r in range(len(s)+1) )
+        )
+
+def pairwise(iterable):
+    """s -> (s0,s1), (s1,s2), (s2, s3), ..."""
+    a, b = tee(iterable)
+    next(b, None)
+    return zip(a, b)
+
+def r(it,maxi=None):
+    return range( len(it) if maxi is None else min(maxi,len(it)) )
+
+def invert_dict(d):
+    invd = defaultdict(list)
+    for k, v in d.items(): invd[v].append(k)
+    return invd
+
+def is_prefix(t, tt): return len(t) <= len(tt) and tt[:len(t)] == t
+
+def rev_graph(g):
+    gr = defaultdict(list)
+    for p in g:
+        for q in g[p]:
+            gr[q].append(p)
+    return gr

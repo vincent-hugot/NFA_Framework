@@ -390,7 +390,7 @@ def decExam2020Verif():
             for p in range(n + 1)
             for g in X
             if p - g >= 0
-        }).named(f"Decrement({n},{X})")
+        }).named(f"Decrement({n}, {X})")
 
     P = decrement(4,{1,2,4}).visu()
     P.texvisu(defbend="bend left")
@@ -398,6 +398,40 @@ def decExam2020Verif():
     P.texvisu(qloc="4 \ 3 / 2 \ 1 / 0", bends="4 < 0")
     decrement(5, set(range(1,5+1))).visu()
     decrement(5, (1,2,3)).visu()
+
+    def increment(n,m,i,X):
+        return NFA({i}, Q := set(range(n, m + 1)), {
+            (p, k if k < 0 else f"+{k}", p + k )
+            for p in Q
+            for k in X
+            if n <= p + k  <= m
+        }).named(f"Increment({n}, {m}, {i}, {X})")
+
+    P = increment(-2,3,{-1, 1, 2}).visu()
+    P.texvisu(qloc="0 / 1 / 2 > 3 \n 0 \\ -1 \\ -2",
+              bends="-2 <55 0  -1 >20,~ 1  0 <55 2  1 >,~ 3",
+              defbend="bend left")
+
+
+
+
+@ann
+def concatenation():
+    A = NFA.of_set({"abc", "ABC"}).renum().visu()
+    B = NFA.of_set({"012", "789"}).renum().visu()
+
+    C = A + B
+    C = C.visu()  # .renum().visu()
+
+    D = NFA.concatenate(A, B, C).visu().renum().named("D").visu() \
+        .rm_eps().visu().dfa().visu().mini().visu()
+
+    # words of fixed length
+    L = NFA.of_length(0, "abc").visu()
+    L = NFA.of_length(2, "abc").visu()
+    L = NFA.of_length(4, "01").visu()
+    L = NFA.of_length(4, "01").setworder(tuple).visu()
+
 
 
 def main():
@@ -409,6 +443,7 @@ def main():
     exo_aba_factor()
     exo_explosive_det()
     arun()
+    concatenation()
     shuffles()
     ofset()
     isomorphisms()
@@ -420,4 +455,7 @@ def main():
     exam2020()
     decExam2020Verif()
 
-main()
+# main()
+
+decExam2020Verif()
+

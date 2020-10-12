@@ -20,7 +20,7 @@
 
 
 from toolkit import *
-
+from collections import defaultdict
 
 
 # TODO: meta decorator to choose what to preserve, using setattr
@@ -106,6 +106,7 @@ class NFA:
     def trans_2(s):
         """get dict (p,a) -> set of q : delta total function"""
         look = { (p,a) : set() for p in s.Q for a in s.Σ }
+        # look = defaultdict(lambda : set()) # breaks complete !
         for (p,a,q) in s.Δ:
             look[p,a] = look[p,a] | {q}
         return look
@@ -175,6 +176,41 @@ class NFA:
             { ((r,p), a, (r,q)) for (p,a,q) in o.Δ for r in s.Q },
             name=f"({s.name} ⊕ {o.name})"
         )
+
+    @staticmethod
+    def disjoint(os):
+        """Make automata states disjoint if need be
+        :param os: list of automata"""
+        if len(os) <= 1: return os
+        couples = ( (os[i],os[j]) for i in range(len(os)-1) for j in range(i,len(os)) )
+        if any( A.Q & B.Q for A,B in couples ):
+            return [s.map(lambda q: (k, q)) for k, s in enumerate(os)]
+        return os
+
+
+    def concatenate(*os):
+        """Concatenate automata / languages"""
+        os = NFA.disjoint(os)
+        res = NFA(
+            os[0].I,
+            os[-1].F,
+            set.union(*(s.Δ for s in os)),
+            name="("+" + ".join(s.name or "None" for s in os) +")",
+            trimmed=all(A._trimmed for A in os)
+        )
+        for A,B in pairwise(os):
+            res.add_rules( { (p,'',q) for p in A.F for q in B.I } )
+        return res
+
+
+    @preserve
+    def __add__(s,o):
+        """
+        Concatenate
+        :param o: other automaton
+        """
+        return s.concatenate(o)
+
 
     @staticmethod
     def shuffle(u,v,aut=False):
@@ -457,8 +493,7 @@ class NFA:
     def union(*os):
         """Union of arguments"""
         if not os: return NFA(set(), set(), set())
-        if len(os) > 1 and set.intersection(*(s.Q for s in os)):
-            os = [s.map(lambda q: (k, q)) for k, s in enumerate(os)]
+        os = NFA.disjoint(os)
         return NFA(
             set.union(*(s.I for s in os)),
             set.union(*(s.F for s in os)),
@@ -512,17 +547,20 @@ class NFA:
                      for q in closs(look[p,a]) },name=s.nop('ε') )
 
 
-    # returns exact states accessed by reading word from states
-    # default: from initials
     def __call__(s,w,Q=None):
+        """
+        returns exact states accessed by reading word from starting states
+        :param w: the word
+        :param Q:stating states: default: from initials
+        """
         assert all(a for a in s.Σ)
         e = s.I if Q is None else Q
         for a in w:
             e = {q for p, b, q in s.Δ if p in e and b == a}
         return e
 
-    # return set of accessible states
     def accessibles(s):
+        """return set of accessible states"""
         d = s.trans_1()
         acc = { p : { q for _,q in d.get(p,()) } for p in s.Q }
         x = s.I # accessibles
@@ -589,6 +627,25 @@ class NFA:
                    name = "/W:" + str(w)[:10],
                    trimmed=True,
                    worder=str if type(w) is str else tuple)
+
+    @staticmethod
+    def of_length(n,Σ):
+        return NFA({0}, {n}, {(k, a, k + 1)
+                        for k in range(n) for a in Σ},
+                   name=f"/{Σ}^{n}:",
+                   trimmed=True)
+
+    @staticmethod
+    def of_length_range(n,m,Σ):
+        A = NFA.of_length(m,Σ)
+        A.F = set(range(n,m+1))
+        return A.named(f"/{Σ}^[{n},{m}]:")
+
+    def extend(s,Σ):
+        """concatenate language with Σ^*"""
+        S = s.copy()
+        S.add_rules({(p, a, p) for p in S.F for a in Σ})
+        return S.setnop('e')
 
     @staticmethod
     def of_set(L,name=None):
@@ -1110,6 +1167,7 @@ class NFA:
             return f
         oname = s.name
         s = s.trim().dfa().complete()
+        if not s.Q: return s.copy()
         try: Q = sorted(s.Q)
         except TypeError : Q = list(s.Q)
         sy = sorted(s.Σ)
