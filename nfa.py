@@ -362,7 +362,7 @@ class NFA:
               ):
         """ Named synchronised product of systems, along synchronisation dictionaries set
           [{component_name: transition, ...},...]
-        :param sds: synchronisation dictionaries set
+        :param sds: synchronisation dictionaries list
         :param filter: rulefilter(A,P,v,Q) predicate on automaton and rule, filtering
             what rules / states are added (in batch).
             States are tuple of couples, since dict is not hashable.
@@ -1343,6 +1343,46 @@ class NFA:
                 s._grow_step.update({x:n for x in (s.Q | s.Δ) - s._grow_step.keys()})
         return s
 
-def TS(Δ):
-    """Transition system"""
-    return NFA((),(),Δ)
+    # interface automata; cf Sebti Mouelhi PhD 2011
+    # assume strings on transitions
+
+    def Σins(s):  return { a[:-1] for a in s.Σ if a and a[-1] == "?" }
+
+    def Σouts(s): return { a[:-1] for a in s.Σ if a and a[-1] == "!" }
+
+    @staticmethod
+    def interface_sprod(A,B):
+        An = A.name ; Bn = B.name
+        Ai, Bi = A.Σins(), B.Σins()
+        Ao, Bo = A.Σouts(), B.Σouts()
+        def bare(S): return { a[:-1] for a in S }
+        assert not (Ai & Bi) and not (Ao & Bo)
+        # assert that cannot be both i and o in an automaton
+        # print (Ai,Bi,Ao,Bo)
+        sds = (
+           [ { An: io+"?", Bn: io+"!"}  for io in Ai & Bo ]
+         + [ { An: oi+"!", Bn: oi+"?"}  for oi in Ao & Bi ]
+        )
+        shared = { a+suff for suff in "!?" for a in Ai & Bo | Ao & Bi }
+        sds += [ { Aut.name: i } for Aut in (A,B) for i in Aut.Σ - shared ]
+        # print(sds)
+        P =  NFA.nsprod(A,B,sds=sds)
+        P.dnice().visu()
+
+        def collapse_tr(t):
+            if len(t) == 1: return t[0][1]
+            elif len(t) == 2: return t[0][1][:-1]+";"
+            else: assert False
+        def collapse_state(Q):
+            (_,p),(__,q) = Q
+            return x if len (x:=f"{p}{q}") <= 2 else f"{p},{q}"
+
+        R = NFA(P.I, P.F, (
+            (p,collapse_tr(a),q) for p,a,q in P.Δ
+        ) ).map(collapse_state).named(f"{An} ⨉i {Bn}")
+
+        return R
+
+
+
+

@@ -407,7 +407,7 @@ def decExam2020Verif():
             if n <= p + k  <= m
         }).named(f"Increment({n}, {m}, {i}, {X})")
 
-    P = increment(-2,3,{-1, 1, 2}).visu()
+    P = increment(-2,3,0,{-1, 1, 2}).visu()
     P.texvisu(qloc="0 / 1 / 2 > 3 \n 0 \\ -1 \\ -2",
               bends="-2 <55 0  -1 >20,~ 1  0 <55 2  1 >,~ 3",
               defbend="bend left")
@@ -432,6 +432,26 @@ def concatenation():
     L = NFA.of_length(4, "01").visu()
     L = NFA.of_length(4, "01").setworder(tuple).visu()
 
+def interfaceAutomataProduct():
+    client = NFA.spec("""
+        1 
+        __
+        1 msg! 2
+        2 ok? 1""").named("client").visu()
+
+    comp = NFA.spec("""
+        1 
+        __
+        1 msg? 2
+        2 envoyer! 3
+        3 nack? 4 ack? 6
+        4 envoyer! 5
+        5 ack? 6 nack? 7
+        6 ok! 1
+        7 echec! 1
+        """).named("comp").visu()
+
+    NFA.interface_sprod(comp, client).visu()
 
 
 def main():
@@ -457,5 +477,4 @@ def main():
 
 # main()
 
-decExam2020Verif()
-
+interfaceAutomataProduct()
