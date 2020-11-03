@@ -433,15 +433,16 @@ def concatenation():
     L = NFA.of_length(4, "01").setworder(tuple).visu()
 
 def interfaceAutomataProduct():
+    NFA.VISULANG = 0
     client = NFA.spec("""
         1 
-        __
+        1
         1 msg! 2
         2 ok? 1""").named("client").visu()
 
     comp = NFA.spec("""
         1 
-        __
+        1
         1 msg? 2
         2 envoyer! 3
         3 nack? 4 ack? 6
@@ -451,8 +452,21 @@ def interfaceAutomataProduct():
         7 echec! 1
         """).named("comp").visu()
 
-    NFA.interface_sprod(comp, client).visu()
+    comp_client = NFA.interface_sprod(comp, client,visu_dnice=True).visu()
 
+    canal = NFA.spec("""
+            1 
+            1
+            1 envoyer? 2
+            2 token! 3
+            3 ack! 4
+            4 liberer_token! 1
+            D nack! D
+            """).named("canal").visu()
+    print(canal)
+
+    canal_comp_client = NFA.interface_sprod(comp_client, canal,visu_dnice=True).visu().trim().visu()
+    NFA.VISULANG = 10
 
 def main():
     exoEqualRegexp()

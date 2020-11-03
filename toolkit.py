@@ -23,6 +23,7 @@ import subprocess as sp
 from math import sqrt
 import os
 import tempfile, shutil as sh
+from shutil import copy
 from collections import defaultdict
 
 term_reset= "\u001b[0m"
@@ -56,12 +57,24 @@ def inputint(prompt="? ", default=0, upper=None):
     return n
 
 
-# return generator of states not in s
 def fresh_gen(s=()):
+    """return generator of states not in s (at next() time)."""
+    # s = set(s) # local copy in case s modified during lifespan of gen
+    # that would not work as expected, as this is executed at time of first next(),
+    # not actually at time of fresh_gen() call...
     k=0
     while True:
         if k not in s: yield k
         k+=1
+
+if __debug__:
+    g = fresh_gen((1, 3, 5))
+    assert [next(g) for _ in range(5)] == [0, 2, 4, 6, 7]
+    Q = set()
+    g = fresh_gen(Q)
+    next(g)
+    Q.add(1)
+    assert  next(g) == 2
 
 def try_eval(s):
     try: return eval(s)
@@ -81,7 +94,6 @@ def do_dot(pdfname,pdfprepend, store=None):
     assert sh.which("pdftk")
     assert sh.which("dot")
     r = sp.run(["dot", "-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"])  # 3.7 capture output
-    from shutil import copy
     if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
     assert not r.returncode
     if os.path.isfile(pdfname + ".pdf"):

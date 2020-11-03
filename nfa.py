@@ -1347,18 +1347,21 @@ class NFA:
     # assume strings on transitions
 
     def Σins(s):  return { a[:-1] for a in s.Σ if a and a[-1] == "?" }
-
     def Σouts(s): return { a[:-1] for a in s.Σ if a and a[-1] == "!" }
+    def Σh(s):    return { a[:-1] for a in s.Σ if a and a[-1] == ";" }
 
     @staticmethod
-    def interface_sprod(A,B):
+    def interface_sprod(A,B,visu_dnice=False):
         An = A.name ; Bn = B.name
         Ai, Bi = A.Σins(), B.Σins()
         Ao, Bo = A.Σouts(), B.Σouts()
-        def bare(S): return { a[:-1] for a in S }
+        Ah, Bh = A.Σh(), B.Σh()
+        def bare(Σ): return {a[:-1] for a in Σ}
+        assert bare(A.Σ) == Ai|Ao|Ah, f" {A.Σ=} {Ai=} {Ao=} {Ah=}"
+        assert bare(B.Σ) == Bi | Bo | Bh, f" {B.Σ=} {Bi=} {Bo=} {Bh=}"
         assert not (Ai & Bi) and not (Ao & Bo)
-        # assert that cannot be both i and o in an automaton
-        # print (Ai,Bi,Ao,Bo)
+        assert all(not I&O and not O&H and not H&I for (I,O,H) in ((Ai,Ao,Ah), (Bi,Bo,Bh)))
+        # print(f" {A.Σ=} {Ai=} {Ao=} {Ah=}")
         sds = (
            [ { An: io+"?", Bn: io+"!"}  for io in Ai & Bo ]
          + [ { An: oi+"!", Bn: oi+"?"}  for oi in Ao & Bi ]
@@ -1367,7 +1370,7 @@ class NFA:
         sds += [ { Aut.name: i } for Aut in (A,B) for i in Aut.Σ - shared ]
         # print(sds)
         P =  NFA.nsprod(A,B,sds=sds)
-        P.dnice().visu()
+        if visu_dnice: P.dnice().visu()
 
         def collapse_tr(t):
             if len(t) == 1: return t[0][1]
