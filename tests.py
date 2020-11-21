@@ -78,7 +78,7 @@ def minimisation_exo():
     c 1 f 0 e
     d 0 c 1 g
     g 0 d 1 f
-    """,name="Minimisation exo"
+    """,name="Minimisation exo", Qtype=str
     ).visu().trim().visu().dfa().visu().mini().visu()
 
 # minimisation_exo()
@@ -136,10 +136,21 @@ def shuffles():
 def exo_explosive_det():
     A = NFA( {0}, {3},
         { (0,'a',0), (0,'b',0), (0,'a',1),
-          (1,'a',2), (1,'b',2),(2,'a',3),(2,'b',3),(2,'a',3) },
+          (1,'a',2), (1,'b',2),(2,'a',3),(2,'b',3)},
         name="a__"
-    )
+    ).visu()
+    # B = NFA.spec("""
+    # 0
+    # 3
+    # 0 a 0 b 0 a 1
+    # 1 a 2 b 2
+    # 2 a 3 b 3
+    # """,name='B').visu()
+    # print(A)
+    # A.table()
+    A.texvisu("0 > 1 > 2 > 3")
     A.run("abaabbaaababb")
+    # Ad = A.dfa().visu(pdfname="export.pdf")#.texvisu("0 / 1 \n 0 \ 2",renum=True)
     A.dfa(pdf=NFA.VISUPDF).visu()
 
 # exo_explosive_det()
@@ -237,6 +248,7 @@ def digicode():
     for c in "x123":
         Digi.add_rule(0,c,0)
     Digi.name="Digicode"
+    Digi.texvisu("0 > 1 > 2 > 3")
     Digi.visu().dfa().visu()
 
 # digicode()
@@ -463,7 +475,7 @@ def interfaceAutomataProduct():
             4 liberer_token! 1
             D nack! D
             """).named("canal").visu()
-    print(canal)
+    # print(canal)
 
     canal_comp_client = NFA.interface_sprod(comp_client, canal,visu_dnice=True).visu().trim().visu()
     NFA.VISULANG = 10
@@ -488,7 +500,6 @@ def main():
     ctl_tests()
     exam2020()
     decExam2020Verif()
+    interfaceAutomataProduct()
 
-# main()
-
-interfaceAutomataProduct()
+main()
