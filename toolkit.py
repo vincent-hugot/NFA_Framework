@@ -81,7 +81,7 @@ def try_eval(s):
     except: return s
 
 class fset(frozenset): # less ugly writing in subset constructions
-    def __init__(s,e): super().__init__()
+    def __init__(s,*args): super().__init__()
     def __repr__(s): return super().__repr__()[5:-1] if s else '{}'
     def __or__(s,o): return fset(frozenset.__or__(s,o))
     def __and__(s, o): return fset(frozenset.__and__(s, o))
@@ -232,9 +232,11 @@ def pairwise(iterable):
 def r(it,maxi=None):
     return range( len(it) if maxi is None else min(maxi,len(it)) )
 
-def invert_dict(d):
-    invd = defaultdict(list)
-    for k, v in d.items(): invd[v].append(k)
+def invd(d):
+    """invert dictionary or assoc list, losslessly"""
+    if not isinstance(d,dict): d = dict(d)
+    invd = defaultdict(set)
+    for k, v in d.items(): invd[v].add(k)
     return invd
 
 def is_prefix(t, tt): return len(t) <= len(tt) and tt[:len(t)] == t
