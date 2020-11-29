@@ -773,8 +773,9 @@ class NFA:
     @preserve
     def __neg__(s):
         """language complementation"""
+        on = s.name
         s = s.dfa().complete()
-        return NFA(s.I, s.Q - s.F, s.Δ, name=s.nop('-'))
+        return NFA(s.I, s.Q - s.F, s.Δ, name=f"{on} /-")
 
     def repr(s,N=20):
         L = list(s[:N + 1]); L.sort()
@@ -864,7 +865,7 @@ class NFA:
         return s
 
     def tex(self, qloc="",bends="",defbend='',defavoidbend="bend left=10",
-            defloop='loop above',qmap=lambda x:x,params=""):
+            defloop='loop above',qmap=lambda x:x,params="",at=lambda x:None):
         """
         :param defloop: default loop stype
         :param defavoidbend: default p <-> q avoidance bending
@@ -872,6 +873,9 @@ class NFA:
         :param bends: any number of p BEND q ; e.g. <, >, ~, >20; multiple BENDs can
             be separated w/ commas
         :param defbend: default bend / transition command
+        :param params: global parameters of the picture
+        :param at: node -> position. force absolute position through "at" keyword
+        :param qmap: mapping for pretty-printing complex states; comes from renum in texvisu
         :return: TikZ code
         """
         i = "    "
@@ -918,8 +922,10 @@ class NFA:
         order = [e for k, e in enumerate(order) if e not in order[:k]]
 
         for q in order + list(s.Q - set(order)):
+            absl = f"at {p} " if (p := at(qmap(q))) else ""
+            rell = loc.get(q,'')  if not p else "" # some tests depend on renum; should update to use qmap q if option
             r += f"{i}\\node[state,{'initial,' if q in s.I else ''}{'accepting' if q in s.F else ''}]" \
-                 f" ({q}) [{loc.get(q,'')}] {{{qmap(q)}}};\n"
+                 f" ({q}) [{rell}] {absl}{{{qmap(q)}}};\n"
 
         cmds = {
             "<" : "bend left",

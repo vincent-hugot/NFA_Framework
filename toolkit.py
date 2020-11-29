@@ -93,9 +93,10 @@ assert str(fset({1,2,3})) == '{1, 2, 3}'
 def do_dot(pdfname,pdfprepend, store=None):
     assert sh.which("pdftk")
     assert sh.which("dot")
-    r = sp.run(["dot", "-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"])  # 3.7 capture output
-    if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
+    r = sp.run(["dot", "-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"],capture_output=True)  # 3.7 capture output
+    if r.returncode: print(r)
     assert not r.returncode
+    if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
     if os.path.isfile(pdfname + ".pdf"):
         sp.run(["cp", pdfname + ".pdf", pdfname + "_copy.pdf"])
         if pdfprepend:
@@ -123,6 +124,7 @@ def do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
                 "\n\\begin{document}\n"+tex+"\n\end{document}")
         testfile and sh.copy(td+"/x.tex",testfile)
         r = sp.run(["pdflatex", "-halt-on-error", "x.tex"],cwd=td,capture_output=silent)
+        if r.returncode: print(r)
         if sh.which("pdfcrop"):
             sp.run(["pdfcrop", "x.pdf", "xc.pdf"], cwd=td,capture_output=silent)
             sh.move(td + "/xc.pdf", name + "_fig.pdf")
