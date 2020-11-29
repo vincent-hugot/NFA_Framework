@@ -14,7 +14,7 @@ from itertools import *
 
 sp.run(["rm", "-f", f"{NFA.VISUPDF}.pdf"])
 
-NFA.NOVISU = True
+NFA.NOVISU = False
 NFA.VISULANG = 2
 NFA.VISU_INITIAL_ARROW = False
 NFA.VISUDOUBLEARROWS = True
@@ -23,7 +23,7 @@ _ = NFA.Stay
 actorsv = defcst("wolf", "goat", "cabb", "farmer", namespace=globals())
 actors = fset(actorsv)
 
-NFA.visutext("Direct method")
+NFA.visutext("Naïve method")
 
 Farmer = NFA(
     {actors},
@@ -69,7 +69,7 @@ Farmer.map(f=lambda q: (
 ##########################################################################
 ##########################################################################
 
-NFA.visutext("Product, named version")
+NFA.visutext("Named Product")
 NFA.NOVISU = False
 
 Char = NFA.spec("""
