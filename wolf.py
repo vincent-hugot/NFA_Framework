@@ -18,7 +18,6 @@ NFA.NOVISU = False
 NFA.VISULANG = 2
 NFA.VISU_INITIAL_ARROW = False
 NFA.VISUDOUBLEARROWS = True
-_ = NFA.Stay
 
 actorsv = defcst("wolf", "goat", "cabb", "farmer", namespace=globals())
 actors = fset(actorsv)
@@ -27,14 +26,12 @@ NFA.visutext("Naïve method")
 
 Farmer = NFA(
     {actors},
-    set(),
-    set(),
     name="Farmer",
     worder=tuple
 ).visu()
 
-def _licit(q):
-    return farmer in q if {wolf, goat} <= q or {goat,cabb} <= q else True
+def _licit(s):
+    return farmer in s if {wolf, goat} <= s or {goat, cabb} <= s else True
 
 def licit(q):
    return _licit(q) and _licit(actors - q)
