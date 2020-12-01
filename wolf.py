@@ -14,27 +14,24 @@ from itertools import *
 
 sp.run(["rm", "-f", f"{NFA.VISUPDF}.pdf"])
 
-# NFA.NOVISU = True
+NFA.NOVISU = False
 NFA.VISULANG = 2
 NFA.VISU_INITIAL_ARROW = False
 NFA.VISUDOUBLEARROWS = True
-_ = NFA.Stay
 
 actorsv = defcst("wolf", "goat", "cabb", "farmer", namespace=globals())
 actors = fset(actorsv)
 
-NFA.visutext("Direct method")
+NFA.visutext("Naïve method")
 
 Farmer = NFA(
     {actors},
-    set(),
-    set(),
     name="Farmer",
     worder=tuple
 ).visu()
 
-def _licit(q):
-    return farmer in q if {wolf, goat} <= q or {goat,cabb} <= q else True
+def _licit(s):
+    return farmer in s if {wolf, goat} <= s or {goat, cabb} <= s else True
 
 def licit(q):
    return _licit(q) and _licit(actors - q)
@@ -59,7 +56,7 @@ def growfarmer(A):
 
 
 Farmer.growtofixpoint(growfarmer, record_steps=True)
-Farmer.F = { fset(()) }
+Farmer.F = { fset() }
 
 Farmer.visusteps()#(rankdir="TB")
 Farmer.map(f=lambda q: (
@@ -67,60 +64,30 @@ Farmer.map(f=lambda q: (
 )).visu(break_strings=False)
 
 ##########################################################################
-NFA.visutext("Product, old vector version")
-# This version is deprecated; see new version below.
+##########################################################################
+
+NFA.visutext("Named Product")
+NFA.NOVISU = False
 
 Char = NFA.spec("""
 0
 1
 0 1 1
-1 0 0
-""","Char").visu()
+1 0 0""","Char").visu()
 
-VS = VecSet(actorsv)
 sysv = [Char.copy().named(x) for x in actorsv]
-
-def prodfilter(A, P, v, Q):
-    return Q not in A.Q and licit(VS.setofvec(Q))  # not in Q optional: cycles or not.
-
-moves = [ {farmer,a} for a in actors ]
-
-svec = {VS.vecofset(S, one=z, zero=_) for z in (0, 1) for S in moves}
-
-P = NFA.sprod(*sysv,
-              svec=svec,
-              filter=prodfilter
-              )
-
-print(repr(P))
-
-P=P.visu().map(f=lambda v:VS.setsofvec(v,zero=1),
-             g=lambda v: ", ".join(VS.setofvec(v,zero=_) - {farmer})
-             ).visu()
-
-
-print(f"Total solutions: {len(sols := list(P))}")
-
-for sol in sols: print(sol)
-
-##########################################################################
-NFA.visutext("Product, named version (NEW)")
-NFA.NOVISU = False
 sds = [{farmer:x, a:x} for a in actors for x in (0, 1)]
 
 def prodfilter(A, P, v, Q):
-    return Q not in A.Q and licit({c for c,x in Q if x==0})
-
+    return Q not in A.Q and licit(invd(Q)[0]) # not in Q optional: cycles or not.
 
 P = NFA.nsprod(*(reversed(sysv)),
                sds=sds,
                filter=prodfilter,
                # nice=True, # breaks visusteps if true
                record_steps=True
-               )
+               ).visu()
 
 print(repr(P))
 # P.visusteps()
 P.dnice().visu()
-
-# P=P.visu()

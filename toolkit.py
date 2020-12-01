@@ -81,7 +81,7 @@ def try_eval(s):
     except: return s
 
 class fset(frozenset): # less ugly writing in subset constructions
-    def __init__(s,e): super().__init__()
+    def __init__(s,*args): super().__init__()
     def __repr__(s): return super().__repr__()[5:-1] if s else '{}'
     def __or__(s,o): return fset(frozenset.__or__(s,o))
     def __and__(s, o): return fset(frozenset.__and__(s, o))
@@ -93,9 +93,10 @@ assert str(fset({1,2,3})) == '{1, 2, 3}'
 def do_dot(pdfname,pdfprepend, store=None):
     assert sh.which("pdftk")
     assert sh.which("dot")
-    r = sp.run(["dot", "-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"])  # 3.7 capture output
-    if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
+    r = sp.run(["dot", "-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"],capture_output=True)  # 3.7 capture output
+    if r.returncode: print(r)
     assert not r.returncode
+    if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
     if os.path.isfile(pdfname + ".pdf"):
         sp.run(["cp", pdfname + ".pdf", pdfname + "_copy.pdf"])
         if pdfprepend:
@@ -123,6 +124,7 @@ def do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
                 "\n\\begin{document}\n"+tex+"\n\end{document}")
         testfile and sh.copy(td+"/x.tex",testfile)
         r = sp.run(["pdflatex", "-halt-on-error", "x.tex"],cwd=td,capture_output=silent)
+        if r.returncode: print(r)
         if sh.which("pdfcrop"):
             sp.run(["pdfcrop", "x.pdf", "xc.pdf"], cwd=td,capture_output=silent)
             sh.move(td + "/xc.pdf", name + "_fig.pdf")
@@ -232,9 +234,11 @@ def pairwise(iterable):
 def r(it,maxi=None):
     return range( len(it) if maxi is None else min(maxi,len(it)) )
 
-def invert_dict(d):
-    invd = defaultdict(list)
-    for k, v in d.items(): invd[v].append(k)
+def invd(d):
+    """invert dictionary or assoc list, losslessly"""
+    if not isinstance(d,dict): d = dict(d)
+    invd = defaultdict(set)
+    for k, v in d.items(): invd[v].add(k)
     return invd
 
 def is_prefix(t, tt): return len(t) <= len(tt) and tt[:len(t)] == t

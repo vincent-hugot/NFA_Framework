@@ -51,7 +51,7 @@ class NFA:
     VISUDOUBLEARROWS = False # use <-a-> for -a-> <-a- ?
     NOVISU = False      # globally deactivate visualisation; for profiling etc
 
-    def __init__(s,I,F,Δ,name="",Q=set(),trimmed=False,worder=str):
+    def __init__(s,I=(),F=(),Δ=(),name="",Q=set(),trimmed=False,worder=str):
         """
         :return: New NFA
         :param I: initial states
@@ -174,7 +174,7 @@ class NFA:
             { ((p,r), a, (q,r)) for (p,a,q) in s.Δ for r in o.Q }
             |
             { ((r,p), a, (r,q)) for (p,a,q) in o.Δ for r in s.Q },
-            name=f"({s.name} ⊕ {o.name})"
+            name=f"({s.name} ∥ {o.name})"
         )
 
     @staticmethod
@@ -211,6 +211,18 @@ class NFA:
         """
         return s.concatenate(o)
 
+    def __mul__(s, n:int):
+        """
+        Repeat
+        :param n:
+        :return: automaton concatenated to itself
+        """
+        if n < 0: raise ValueError
+        if n == 0: return NFA((), (), (), name=f"{s.name} * 0")
+        if n == 1: return s
+        return (s + (s * (n - 1))).named(f"{s.name} * {n}")
+
+
 
     @staticmethod
     def shuffle(u,v,aut=False):
@@ -219,8 +231,7 @@ class NFA:
         return u @ v if aut else set( u @ v )
 
     def __and__(s,o):
-        """fully synchronised product: language intersection
-        epsilon unadvised"""
+        """fully synchronised product: language intersection"""
         if not all( s.Σ ): s = s.rm_eps()
         if not all( o.Σ ): o = o.rm_eps()
         return NFA(
@@ -358,7 +369,6 @@ class NFA:
               hook=lambda A: None,
               nice=False,
               # disable
-
               ):
         """ Named synchronised product of systems, along synchronisation dictionaries set
           [{component_name: transition, ...},...]
@@ -763,8 +773,9 @@ class NFA:
     @preserve
     def __neg__(s):
         """language complementation"""
+        on = s.name
         s = s.dfa().complete()
-        return NFA(s.I, s.Q - s.F, s.Δ, name=s.nop('-'))
+        return NFA(s.I, s.Q - s.F, s.Δ, name=f"{on} /-")
 
     def repr(s,N=20):
         L = list(s[:N + 1]); L.sort()
@@ -853,7 +864,8 @@ class NFA:
         if print_current: print(erase_line, end="")
         return s
 
-    def tex(self, qloc="",bends="",defbend='',defavoidbend="bend left=10",defloop='loop above',qmap=lambda x:x):
+    def tex(self, qloc="",bends="",defbend='',defavoidbend="bend left=10",
+            defloop='loop above',qmap=lambda x:x,params="",at=lambda x:None):
         """
         :param defloop: default loop stype
         :param defavoidbend: default p <-> q avoidance bending
@@ -861,11 +873,14 @@ class NFA:
         :param bends: any number of p BEND q ; e.g. <, >, ~, >20; multiple BENDs can
             be separated w/ commas
         :param defbend: default bend / transition command
+        :param params: global parameters of the picture
+        :param at: node -> position. force absolute position through "at" keyword
+        :param qmap: mapping for pretty-printing complex states; comes from renum in texvisu
         :return: TikZ code
         """
         i = "    "
         s = self.stringify()
-        r = "\\begin{tikzpicture}[fsa,mathnodes]\n"
+        r = f"\\begin{{tikzpicture}}[fsa,mathnodes,{params}]\n"
 
 
         loc = {}
@@ -874,6 +889,7 @@ class NFA:
             cmds = {
                 "/": "above right",
                 "\\": "below right",
+                "bl": "below left",
                 ">": "right",
                 "<": "left",
                 "^": "above",
@@ -906,8 +922,10 @@ class NFA:
         order = [e for k, e in enumerate(order) if e not in order[:k]]
 
         for q in order + list(s.Q - set(order)):
+            absl = f"at {p} " if (p := at(qmap(q))) else ""
+            rell = loc.get(q,'')  if not p else "" # some tests depend on renum; should update to use qmap q if option
             r += f"{i}\\node[state,{'initial,' if q in s.I else ''}{'accepting' if q in s.F else ''}]" \
-                 f" ({q}) [{loc.get(q,'')}] {{{qmap(q)}}};\n"
+                 f" ({q}) [{rell}] {absl}{{{qmap(q)}}};\n"
 
         cmds = {
             "<" : "bend left",
@@ -932,7 +950,7 @@ class NFA:
                         x, degrees = bend[0], bend[1:]
                         b[(p,q)] += f"{cmds[x]}{'='+degrees if degrees else ''},"
                     else:
-                        b[(p, q)] += f"{cmds[bend]},"
+                        b[(p, q)] += f"{cmds.get(bend,bend)},"
 
 
         r += f"  \\path [->]\n"
@@ -940,7 +958,7 @@ class NFA:
         for (p,q),A in tr.items():
             r += f"{i}({p})  edge  [{defloop+',' if p==q else ''}" \
                  f"{b.get((p,q), defavoidbend if p!=q and (q,p) in tr else defbend)}]  " \
-                 f"node {{{', '.join(map(str,A))}}} ({q})\n"
+                 f"node {{{', '.join(sorted(map(str,A)))}}} ({q})\n"
 
         r += ";\n\\end{tikzpicture}"
         return r
@@ -1225,10 +1243,9 @@ class NFA:
         return f if res else False
 
     @staticmethod
-    def spec(x,name="/Spec", Qtype=try_eval, Ttype=try_eval, style="classic"):
+    def spec(x,name="/Spec", Qtype=try_eval, Ttype=try_eval, style="classic",**kwargs):
         """
         :param x: the spec
-        :param name:
         :param Qtype: constructor for states, eg int; defaults, evaluates python if possible
         :param Ttype: constructor for transitions
         :param style:
@@ -1244,6 +1261,7 @@ class NFA:
 
             style polar: rules "p a b c ... z q", one per line.
                 Not well supported
+        :type kwargs: remaming arguments passed to NFA constructor
         :return: new NFA from compact spec
         """
         i,f,*r = (ll for l in x.splitlines() if (ll := l.strip()))
@@ -1254,6 +1272,7 @@ class NFA:
             if style == "classic":
                 # if not rs: continue
                 p, *A = rs.split()
+                if p == "##": continue
                 while len(A) >= 2:
                     a, q, *A = A
                     Δ.add((p,'' if a == 'eps' else a ,q))
@@ -1266,7 +1285,7 @@ class NFA:
                 p,*A,q = rs.split()
                 Δ |= { (p,a,q) for a in A}
             else: assert False
-        res = NFA(set(i.split()), set(f.split()), set(Δ), name=name )
+        res = NFA(set(i.split()), set(f.split()), set(Δ), **kwargs )
         if Qtype: res = res.map(f=Qtype).named(name)
         if Ttype: res = res.map(g=Ttype).named(name)
         return res
@@ -1308,7 +1327,6 @@ class NFA:
         def esc(s):
             return "".join('\\'+a if a in ('{','}') else a for a in s)
         begin = ( f"% Name = {s.name}\n"
-            f"\\begin{{center}}\n"
             f"\\begin{{tabular}}{{r>{{\\boldmath}}c<{{\ \ \ }}{cid*len(sy)}}}\n"
             f"""&& { ' & '.join(f"${a}$" for a in sy) }  \\\\"""
             f"\hline\n" )
@@ -1319,7 +1337,7 @@ class NFA:
             begin+= ' & '.join(f"${ ', '.join( map(esc,map(str,t[q,a])) ) }$" for a in sy)
             begin+= "\\\\ \n"
 
-        end = f"\hline\n\end{{tabular}}\n\end{{center}}\n"
+        end = f"\hline\n\end{{tabular}}\n"
         print(begin+end)
         return s
 
@@ -1383,6 +1401,7 @@ class NFA:
         R = NFA(P.I, P.F, (
             (p,collapse_tr(a),q) for p,a,q in P.Δ
         ) ).map(collapse_state).named(f"{An} ⨉i {Bn}")
+        R.worder = A.worder
 
         return R
 

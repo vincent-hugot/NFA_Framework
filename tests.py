@@ -248,8 +248,9 @@ def digicode():
     for c in "x123":
         Digi.add_rule(0,c,0)
     Digi.name="Digicode"
-    Digi.texvisu("0 > 1 > 2 > 3")
-    Digi.visu().dfa().visu()
+    Digi.texvisu("0 > 1 > 2 > 3")#.table()
+    Digi.visu().dfa().visu().texvisu("0 > 1 > 2 > 3",
+    "0 lb 0 3 <40,ns 0 3 < 1 2 >70,ns,~ 0",renum=True)
 
 # digicode()
 ########################################
@@ -480,12 +481,58 @@ def interfaceAutomataProduct():
     canal_comp_client = NFA.interface_sprod(comp_client, canal,visu_dnice=True).visu().trim().visu()
     NFA.VISULANG = 10
 
+    Vendor = NFA.spec("""
+    0
+    7
+    0 pay? 1
+    ## 1 deliver! 2 
+    1 verif! 3
+    ## 2 verif! 4
+    3 deliver! 4 transfer? 5
+    4 transfer? 7
+    5 deliver! 7
+    """, name="Vendor", worder=tuple)
+    Vendor.visu()
+
+    Client = NFA.spec("""
+    0
+    0
+    0 pay! 0 deliver? 0 cancel! 0
+    """, name="Client", worder=tuple)
+    Client.visu()
+
+    Bank = NFA.spec("""
+    0
+    1 3
+    0 cancel? 1
+    0 verif? 2
+    2 transfer! 3
+    """, name="Bank", worder=tuple)
+    Bank.visu()
+
+    CB = NFA.interface_sprod(Client, Bank).visu()
+    Sys = NFA.interface_sprod(CB, Vendor).visu()
+
+@ann
+def verif_mini_prog():
+    prog = NFA.spec("""
+    1
+    __
+    1 b=1 1 b=0 2
+    2 b:=1 3
+    3 proc() 4
+    4 b:=0 1""").visu().texvisu("1 > 2 > 3 > 4", "4 < 1")
+
+
+
+
 def main():
     exoEqualRegexp()
     even_odd()
     interro201819()
     minimisation_exo()
     revision_interro()
+    rm_esp_clos_test()
     exo_aba_factor()
     exo_explosive_det()
     arun()
@@ -496,10 +543,13 @@ def main():
     testproducts()
     digicode()
     simplifyArdenSystem()
-    rm_esp_clos_test()
     ctl_tests()
     exam2020()
     decExam2020Verif()
     interfaceAutomataProduct()
+    verif_mini_prog()
 
 main()
+# revision_interro()
+# rm_esp_clos_test()
+
