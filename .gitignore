@@ -1,0 +1,4 @@
+*.pdf
+*.dot
+*.tex
+__pycache__
