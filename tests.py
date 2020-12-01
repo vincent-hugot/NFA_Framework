@@ -551,5 +551,5 @@ def main():
     interfaceAutomataProduct()
     verif_mini_prog()
 
-# main()
-decExam2020Verif()
+main()
+# decExam2020Verif()
