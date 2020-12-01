@@ -425,6 +425,8 @@ def decExam2020Verif():
               bends="-2 <55 0  -1 >20,~ 1  0 <55 2  1 >,~ 3",
               defbend="bend left")
 
+    # IndyT = increment(0,15,15,{-1,-2,-4,-8}).visu().texvisu()
+
 
 
 
@@ -549,7 +551,5 @@ def main():
     interfaceAutomataProduct()
     verif_mini_prog()
 
-main()
-# revision_interro()
-# rm_esp_clos_test()
-
+# main()
+decExam2020Verif()
