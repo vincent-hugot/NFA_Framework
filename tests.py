@@ -525,7 +525,29 @@ def verif_mini_prog():
     3 proc() 4
     4 b:=0 1""").visu().texvisu("1 > 2 > 3 > 4", "4 < 1")
 
+@ann
+def synchro_prod_poly_example():
+    A = NFA.spec("""
+        0
+        1
+        0 a 1 c 1
+        1 a 0""").named("A").visu()
 
+    B = NFA.spec("""
+        0
+        1
+        0 b 1 c 1
+        1 b 0""").renum(2).named("B").visu()
+
+    _ = NFA.Stay
+    C = NFA.sprod(A, B, svec={("a", _), (_, "b"), ("c", "c")}).visu()  # .texvisu(renum=True)
+
+    D = A | B | C
+    D.visu().texvisu(renum=True, at={
+        '0': (0, .5), '1': (1, .5), '2': (-.5, 0), '3': (-.5, -1),
+        '(0, 2)': (0, 0), '(1, 2)': (1, 0),
+        '(0, 3)': (0, -1), '(1, 3)': (1, -1),
+    }.get, params=",x=3cm,y=3cm")
 
 
 def main():
@@ -550,6 +572,6 @@ def main():
     decExam2020Verif()
     interfaceAutomataProduct()
     verif_mini_prog()
+    synchro_prod_poly_example()
 
 main()
-# decExam2020Verif()

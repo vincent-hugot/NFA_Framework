@@ -182,7 +182,7 @@ class NFA:
         """Make automata states disjoint if need be
         :param os: list of automata"""
         if len(os) <= 1: return os
-        couples = ( (os[i],os[j]) for i in range(len(os)-1) for j in range(i,len(os)) )
+        couples = ( (os[i],os[j]) for i in range(len(os)-1) for j in range(i+1,len(os)) )
         if any( A.Q & B.Q for A,B in couples ):
             return [s.map(lambda q: (k, q)) for k, s in enumerate(os)]
         return os
@@ -865,7 +865,7 @@ class NFA:
         return s
 
     def tex(self, qloc="",bends="",defbend='',defavoidbend="bend left=10",
-            defloop='loop above',qmap=lambda x:x,params="",at=lambda x:None):
+            defloop='loop above',qmap=lambda x:x, params="",at=lambda x:None):
         """
         :param defloop: default loop stype
         :param defavoidbend: default p <-> q avoidance bending

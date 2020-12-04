@@ -56,7 +56,7 @@ A, B = OA, OB
 Shu = A.visu() @ B.visu()
 Shu.visu().mini().visu()
 
-S = NFA.of_word("abc") @ NFA.of_word("ABC")
+S = NFA.of_word("abc").visu() @ NFA.of_word("ABC").visu()
 S.visu()
 (-S).visu()
 
