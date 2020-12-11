@@ -21,7 +21,7 @@
 
 from toolkit import *
 from collections import defaultdict
-
+import html
 
 # TODO: meta decorator to choose what to preserve, using setattr
 def preserve(m):
@@ -1105,7 +1105,9 @@ class NFA:
         lang = NFA.VISULANG if lang is None else lang
         if lang:
             L = list(original[:lang+1])
-            comment += "<br/><br/>" + sortstr(L[:lang]) + ("+" if len(L)>lang else "")
+            comment_append = sortstr(L[:lang]) + ("+" if len(L)>lang else "")
+            comment_append = html.escape(comment_append)
+            comment+= f"<br/><br/>{comment_append}"
 
         if comment and not nocomment: dotc += """
             label=<%s>;
