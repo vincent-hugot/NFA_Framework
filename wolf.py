@@ -66,8 +66,8 @@ Farmer.map(f=lambda q: (
 ##########################################################################
 ##########################################################################
 
-NFA.visutext("Named Product")
 NFA.NOVISU = False
+NFA.visutext("Named Product")
 
 Char = NFA.spec("""
 0
