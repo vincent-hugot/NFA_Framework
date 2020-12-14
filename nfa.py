@@ -51,6 +51,9 @@ class NFA:
     VISUFACTORISE = True     # factorise multiple transitions
     VISUDOUBLEARROWS = False # use <-a-> for -a-> <-a- ?
     NOVISU = False      # globally deactivate visualisation; for profiling etc
+    LARGE_RENDERER = "sfdp" # alternative graph renderer for large graphs
+    LARGE_RENDERER_OPTIONS = ["-Goverlap=false"]  # additional graph renderer options
+    LARGE = 800        # a NFA is considered large when it reaches this size
 
     def __init__(s,I=(),F=(),Δ=(),name="",Q=set(),trimmed=False,worder=str):
         """
@@ -1152,7 +1155,10 @@ class NFA:
                           for p,a,q in sΔ if not a])
             f.write('}')
 
-        do_dot(pdfname,pdfprepend)
+        is_small = original.size < NFA.LARGE
+        do_dot(pdfname,pdfprepend,
+               renderer="dot" if is_small else NFA.LARGE_RENDERER,
+               renderer_options= [] if is_small else NFA.LARGE_RENDERER_OPTIONS )
         if print_current: print(erase_line, end="")
 
         return original

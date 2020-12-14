@@ -90,12 +90,13 @@ class fset(frozenset): # less ugly writing in subset constructions
 
 assert str(fset({1,2,3})) == '{1, 2, 3}'
 
-def do_dot(pdfname,pdfprepend, store=None):
+def do_dot(pdfname,pdfprepend, store=None, renderer="dot", renderer_options = []):
     assert sh.which("pdftk")
-    assert sh.which("dot")
-    r = sp.run(["dot", "-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"],capture_output=True)  # 3.7 capture output
+    assert sh.which(renderer)
+    r = sp.run([renderer] + renderer_options + ["-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"],capture_output=True)
     if r.returncode: print(r)
-    assert not r.returncode
+    assert not r.returncode if renderer == "dot" else True
+    # sfdp bad build Error: remove_overlap: Graphviz not built with triangulation library
     if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
     if os.path.isfile(pdfname + ".pdf"):
         sp.run(["cp", pdfname + ".pdf", pdfname + "_copy.pdf"])
