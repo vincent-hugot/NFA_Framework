@@ -986,7 +986,8 @@ class NFA:
              print_current=True,
              print_extra="",
              node_shape="circle",
-             epsilon_style='label=ε color="#666666"'
+             epsilon_style='label=ε color="#666666"',
+             escape_name=True,
              ):
         """Thanks to dot, visualise the saggital diagram of the automaton.
         A pdf is generated and updated for each call, as well as a dot for the last call only
@@ -1016,6 +1017,7 @@ class NFA:
         :param print_extra: extra info to add to visualisation task
         :param node_shape: basic node shape; "circle" by default
         :param epsilon_style: special style of epsilon transitions
+        :param escape_name: HTML escape for automaton name
         :return: self"""
 
         if NFA.NOVISU: return s
@@ -1097,7 +1099,7 @@ class NFA:
                % (rankdir or NFA.VISURANKDIR)
         comment = comment or ""
         if name and original.name:
-            comment = f"<i><b>{html.escape(original.name)}</b></i>" + comment
+            comment = f"<i><b>{(html.escape if escape_name else lambda x:x)(original.name)}</b></i>" + comment
 
         size = NFA.VISUSIZE if size is None else size
         if size:
@@ -1166,7 +1168,7 @@ class NFA:
     @staticmethod
     def visutext(txt,**kw):
         """create a pdf page with the given text"""
-        NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,**kw)
+        NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,**kw)
 
     # automaton minimisation, Brzozowski method
     def Brzozowski(s):
