@@ -1097,7 +1097,7 @@ class NFA:
                % (rankdir or NFA.VISURANKDIR)
         comment = comment or ""
         if name and original.name:
-            comment = f"<i><b>{original.name}</b></i>" + comment
+            comment = f"<i><b>{html.escape(original.name)}</b></i>" + comment
 
         size = NFA.VISUSIZE if size is None else size
         if size:
