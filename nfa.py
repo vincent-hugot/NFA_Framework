@@ -928,7 +928,7 @@ class NFA:
         for q in order + list(s.Q - set(order)):
             absl = f"at {p} " if (p := at(qmap(q))) else ""
             rell = loc.get(q,'')  if not p else "" # some tests depend on renum; should update to use qmap q if option
-            r += f"{i}\\node[state,{'initial,' if q in s.I else ''}{'accepting' if q in s.F else ''}]" \
+            r += f"{i}\\node[state,{'initial,' if q in s.I else ''}{'accepting,' if q in s.F else ''}]" \
                  f" ({q}) [{rell}] {absl}{{{qmap(q)}}};\n"
 
         cmds = {

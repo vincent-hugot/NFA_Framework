@@ -368,13 +368,22 @@ def ctl_tests():
     """, name="Katoen examples",style="ts").visu()
 
     labels = { 0: {p}, 1:{p,q}, 2:{q}, 3:{p} }
+    kat.texvisu("0 \ 2 / 1 > 3", "3 lb 3")
 
     for f in [
         (EX, p), (AX, p),
         (EG, p), (AG, p),
         (EF, (EG, p)),
+        (EF, (AG, p)),
+        (AF, (EG, p)),
+        (AF, (AG, p)),
         (AU, p, q),
-        (EU, p, (AND, (NOT, p), (AU, (NOT, p), q)))
+        (EU, p, q),
+        (EU, p, (AND, (NOT, p), (AU, (NOT, p), q))),
+        (AX, (AX, q)),
+        (EX, (AX, q)),
+        (AX, (EX, q)),
+        (EX, (EX, q)),
     ]:
         checkvisu(kat,labels,f,visu=("simple","detailed"))
 
@@ -575,3 +584,4 @@ def main():
     synchro_prod_poly_example()
 
 main()
+# ctl_tests()
