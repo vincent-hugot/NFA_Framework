@@ -1263,7 +1263,7 @@ class NFA:
             n += 1
             feed(n)
         classes = invd(cl[n][""]) # c -> set of states of class c
-        rep = { c: list(classes[c])[0] for c in classes} # representative of class
+        rep = { c: next(iter(classes[c])) for c in classes } # representative of class
         if table: s._Moore_table(Q, symbs, cl,n)
         return NFA(
             { c for c in classes if classes[c] >= s.I },
