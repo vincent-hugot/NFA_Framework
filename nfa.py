@@ -628,7 +628,7 @@ class NFA:
 
     @preserve
     def trim(s):
-        if s._trimmed: return s # no copy
+        if s._trimmed: return s.copy()
         use = s.accessibles() & s.coaccessibles()
         return s.only(use,trimmed=True)
 
@@ -674,7 +674,7 @@ class NFA:
         """return equivalent DFA; no epsilons need apply
         if pdf is specified, generate step by step slides"""
         if pdf: return s.dfa_pdf(pdf) # delegate visualisation
-        if not all( s.Σ ): s = s.rm_eps()
+        if not all( a != "" for a in s.Σ ): s = s.rm_eps().setnop('d')
         if s.is_det(): return s.copy()
         l = s.trans_2()
         do, done, rlz  = { fset(s.I) }, set(), set()
@@ -1171,14 +1171,20 @@ class NFA:
         NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,**kw)
 
     # automaton minimisation, Brzozowski method
-    def Brzozowski(s):
+    def Brzozowski(s,table=False):
         return s.trim().reverse().dfa().reverse().dfa()
 
     # automaton minimisation
-    def mini(s): return s.Moore()
+    def mini(s,*a,**k):
+        # r1 = s.Moore(*a, **k)
+        # r2 = s.Moore2(*a, **k)
+        # r3 = s.Brzozowski(*a, **k)
+        # assert r1.iso(r2) and r2.iso(r3), (r1.visu(),r2.visu(),r3.visu())
+        return s.Moore2(*a, **k)
 
-    def Moore(s):
+    def Moore(s,table=False):
         """Automaton minimisation, Moore method
+        SUPERCEDED by Moore2.
         I really hate the way I wrote this; I tried to emulate
         the manual way to do it, so that I can later extend the code to
         generate the manual table of classes, for pedagogical purposes
@@ -1223,17 +1229,81 @@ class NFA:
                      for g in groups for i,a in enumerate(sy) }
                    ).trim().map(lambda x:fset(itog[x])).setnop("M", oname)
 
+
+    def Moore2(s,table=False):
+        """ Automaton minimisation, Moore method.
+            :param table: print Moore table as side effect """
+        oname = s.name
+        s = s.trim().dfa().complete()
+        if not s.Q: return s.copy()
+        try: Q = sorted(s.Q)
+        except TypeError : Q = list(s.Q)
+        symbs = sorted(s.Σ)
+        cl = {} ## classes : { n : { symbol : { state: class }  } } symbol can be eps
+        cl[0] = {}
+        cl[0][""] = { q : int(q in s.F) for q in Q }
+        l = s.trans_2d()
+        def feed(n): # feed syms n and initialise n+1
+            for a in symbs:
+                cl[n][a] = { q: cl[n][""][ l[q,a] ] for q in Q }
+            cl[n+1] = {}
+            bilan = { q : tuple(t[q] for t in [cl[n][a] for a in [""]+symbs]) for q in Q }
+            ntup = {} # number bilan tuples
+            current = 0 # current class number
+            for q in Q:
+                tup = bilan[q]
+                if tup not in ntup:
+                    ntup[tup] = current
+                    current += 1
+            fbilan = { q : ntup[bilan[q]] for q in Q } # final bilan
+            cl[n+1][""] = fbilan
+        n = 0
+        feed(n)
+        while cl[n][""] != cl[n+1][""]:
+            n += 1
+            feed(n)
+        classes = invd(cl[n][""]) # c -> set of states of class c
+        rep = { c: list(classes[c])[0] for c in classes} # representative of class
+        if table: s._Moore_table(Q, symbs, cl,n)
+        return NFA(
+            { c for c in classes if classes[c] >= s.I },
+            { c for c in classes if classes[c] & s.F },
+            { (p,a,cl[n][a][rep[p]]) for p in classes for a in symbs }
+        ).trim().map(f=lambda c:fset(classes[c])).setnop("M", oname)
+
+    def _Moore_table(s,Q,symbs,cl,n): # used from Moore2 only
+        cid='c<{{\ \ }}'
+        bs = "\\"
+        def esc(s):
+            return "".join('\\'+a if a in ('{','}') else a for a in str(s))
+        macro = "\\newcommand{\RNum}[1]{\\uppercase\expandafter{\\romannumeral #1\\relax}}\n"
+        begin = ( f"% {s.name}, Moore\n"
+            f"\\begingroup{macro}\\begin{{tabular}}{{r<{{\ \ \ }}>{{\\boldmath}}{cid*len(Q)}}}\n"
+            f"""& { ' & '.join(f"${esc(q)}$" for q in Q) }  \\\\"""
+            f"\hline\n" )
+        def pp(c): return f"\\RNum{{{c+1}}}"
+        for k in range(n+2):
+            begin+= "$\eps$ & " + " & ".join( pp(c) for c in cl[k][""].values() ) + "\\\\\n"
+            if k == n+1: break
+            for a in symbs:
+                begin += f"${esc(a)}$ & " + " & ".join(pp(c) for c in cl[k][a].values()) + "\\\\\n"
+            begin += "\hline"
+
+        end = f"\end{{tabular}}\endgroup\n"
+        print(begin+end)
+
+
     def iso(s,o):
         """get state isomorphism between dfas
         Returns False if no isomorphism
         """
-        s = s.trim() ; o = o.trim()
+        # s = s.trim() ; o = o.trim()
         assert s.is_det() & o.is_det()
-        # s.visu() ; o.visu()
-        if list(map(len, (s.Q, s.F, s.Δ))) != list(map(len, (o.Q, o.F, o.Δ))) \
+        if s.I == o.I == set(): return True
+        if list(map(len, (s.I, s.Q, s.F, s.Δ))) != list(map(len, (o.I, o.Q, o.F, o.Δ))) \
                 or s.Σ != o.Σ :
             return False
-        p,P = s.I.pop() , o.I.pop()
+        p,P = next(iter(s.I)) , next(iter(o.I))
         f = {}
         l, m = s.trans_2d(), o.trans_2d()
         res = True
@@ -1328,22 +1398,27 @@ class NFA:
 
     def table(s):
         """latex transition table, printed as side effect"""
-        assert not s.I & s.F # not handled
+        # assert not s.I & s.F # not handled
         sy = sorted(s.Σ)
         Q = sorted(s.Q, key=str)
         t = s.trans_2()
         cid='c<{{\ \ }}'
+        bs = "\\"
         def esc(s):
             return "".join('\\'+a if a in ('{','}') else a for a in s)
         begin = ( f"% Name = {s.name}\n"
             f"\\begin{{tabular}}{{r>{{\\boldmath}}c<{{\ \ \ }}{cid*len(sy)}}}\n"
-            f"""&& { ' & '.join(f"${a}$" for a in sy) }  \\\\"""
+            f"""&& { ' & '.join(f"${a}$" if a else f"${bs}eps$" for a in sy) }  \\\\"""
             f"\hline\n" )
 
         for q in Q:
-            begin+= "Initial" if q in s.I else "Final" if q in s.F else ""
+            # begin+= "Initial" if q in s.I else "Final" if q in s.F else ""
+            spec = []
+            if q in s.I: spec.append("Initial")
+            if q in s.F: spec.append("Final")
+            begin += ", ".join(spec)
             begin+= f" & ${esc(str(q))}$ & "
-            begin+= ' & '.join(f"${ ', '.join( map(esc,map(str,t[q,a])) ) }$" for a in sy)
+            begin+= ' & '.join(f"${ ', '.join( map(esc,map(str,t[q,a])) ) }$" if t[q,a] else "" for a in sy)
             begin+= "\\\\ \n"
 
         end = f"\hline\n\end{{tabular}}\n"
@@ -1413,6 +1488,30 @@ class NFA:
         R.worder = A.worder
 
         return R
+
+    def prefixes(s):
+        """returns languages of prefixes"""
+        r = s.trim()
+        r.F = r.Q
+        return r.named(s.nop("pref"))
+
+    def suffixes(s):
+        """returns languages of suffixes"""
+        r = s.trim()
+        r.I = r.Q
+        return r.named(s.nop("suff"))
+
+    def factors(s):
+        """returns languages of factors"""
+        r = s.trim()
+        r.I = r.Q; r.F = r.Q
+        return r.named(s.nop("factors"))
+
+    def prefix_free_min(s):
+        """return language of words in s with no proper prefixes in s"""
+        r = s.dfa()
+        r.Δ = { (p,a,q) for p,a,q in r.Δ if p not in r.F }
+        return r.trim().renum().named(s.nop("pfmin"))
 
 
 

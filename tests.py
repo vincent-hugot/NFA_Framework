@@ -79,7 +79,7 @@ def minimisation_exo():
     d 0 c 1 g
     g 0 d 1 f
     """,name="Minimisation exo", Qtype=str
-    ).visu().trim().visu().dfa().visu().mini().visu()
+    ).visu().trim().visu().dfa().visu().mini(table=False).visu()
 
 # minimisation_exo()
 
@@ -151,7 +151,8 @@ def exo_explosive_det():
     A.texvisu("0 > 1 > 2 > 3")
     A.run("abaabbaaababb")
     # Ad = A.dfa().visu(pdfname="export.pdf")#.texvisu("0 / 1 \n 0 \ 2",renum=True)
-    A.dfa(pdf=NFA.VISUPDF).visu()
+    A.dfa(pdf=NFA.VISUPDF).visu()#.table()
+    # print(A.dfa())
 
 # exo_explosive_det()
 
@@ -161,7 +162,9 @@ def exo_aba_factor():
     A = NFA( {0}, {3},
         { (0,'a',0), (0,'b',0), (0,'a',1),
           (1,'b',2), (2,'a',3), (3,'a',3), (3,'b',3) },
-        name="_aba_").visu().homo({'b': "cde", 'a':'A'}).visu()\
+        name="_aba_").visu()
+    A.dfa().visu().mini().visu()
+    A.homo({'b': "cde", 'a':'A'}).visu()\
         .homo({'d': ""}).visu().rm_eps().trim().visu()\
         .dfa().visu().mini().visu()
 
@@ -384,6 +387,8 @@ def ctl_tests():
         (EX, (AX, q)),
         (AX, (EX, q)),
         (EX, (EX, q)),
+        (AX, (AF, (AND, p, q))),
+        (AF, (AX, (AND, p, q))),
     ]:
         checkvisu(kat,labels,f,visu=("simple","detailed"))
 
@@ -583,5 +588,6 @@ def main():
     verif_mini_prog()
     synchro_prod_poly_example()
 
+# NFA.NOVISU = True
 main()
-# ctl_tests()
+# minimisation_exo()
