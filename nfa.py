@@ -1241,7 +1241,8 @@ class NFA:
         symbs = sorted(s.Σ)
         cl = {} ## classes : { n : { symbol : { state: class }  } } symbol can be eps
         cl[0] = {}
-        cl[0][""] = { q : int(q in s.F) for q in Q }
+        first = Q[0] in s.F # to ensure first class is always I
+        cl[0][""] = { q : int((q in s.F) != first) for q in Q }
         l = s.trans_2d()
         def feed(n): # feed syms n and initialise n+1
             for a in symbs:
@@ -1272,18 +1273,19 @@ class NFA:
         ).trim().map(f=lambda c:fset(classes[c])).setnop("M", oname)
 
     def _Moore_table(s,Q,symbs,cl,n): # used from Moore2 only
-        cid='c<{{\ \ }}'
+        cid='c<{\ \ }'
         bs = "\\"
         def esc(s):
             return "".join('\\'+a if a in ('{','}') else a for a in str(s))
         macro = "\\newcommand{\RNum}[1]{\\uppercase\expandafter{\\romannumeral #1\\relax}}\n"
         begin = ( f"% {s.name}, Moore\n"
-            f"\\begingroup{macro}\\begin{{tabular}}{{r<{{\ \ \ }}>{{\\boldmath}}{cid*len(Q)}}}\n"
-            f"""& { ' & '.join(f"${esc(q)}$" for q in Q) }  \\\\"""
+            f"\\begingroup{macro}\\begin{{tabular}}{{>{{\\boldmath}}l<{{\ \ \ }}{cid*len(Q)}}}\n"
+            f"""& { ' & '.join(f"{bs}boldmath${esc(q)}$" for q in Q) }  \\\\"""
             f"\hline\n" )
         def pp(c): return f"\\RNum{{{c+1}}}"
         for k in range(n+2):
-            begin+= "$\eps$ & " + " & ".join( pp(c) for c in cl[k][""].values() ) + "\\\\\n"
+            begin+= ("$\eps$" if not k else f"$\\#_{{{k}}}$") \
+                    +  " & " + " & ".join( "\\color{red!50!black}\\bf" + pp(c) for c in cl[k][""].values() ) + "\\\\\n"
             if k == n+1: break
             for a in symbs:
                 begin += f"${esc(a)}$ & " + " & ".join(pp(c) for c in cl[k][a].values()) + "\\\\\n"

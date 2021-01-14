@@ -563,6 +563,28 @@ def synchro_prod_poly_example():
         '(0, 3)': (0, -1), '(1, 3)': (1, -1),
     }.get, params=",x=3cm,y=3cm")
 
+@ann
+def hard_minimisation():
+    tab = False
+    def fib(n):
+        if n == 0: return "0"
+        if n == 1: return "1"
+        return fib(n - 1) + fib(n - 2)
+
+    def FIB(n):
+        return {fib(k) for k in range(n)}
+
+    S = FIB(6)
+
+    A = NFA.of_set(S).dfa().renum().visu().mini(table=tab).visu()
+
+    # starts with final, need to ensure I, II and not II, I, prev bug.
+    B = NFA.spec("""
+    0
+    0
+    0 a 1 b 1
+    1 b 0 a 1
+    """).visu().mini(table=tab).visu()
 
 def main():
     exoEqualRegexp()
@@ -587,7 +609,10 @@ def main():
     interfaceAutomataProduct()
     verif_mini_prog()
     synchro_prod_poly_example()
+    hard_minimisation()
 
 # NFA.NOVISU = True
 main()
 # minimisation_exo()
+
+
