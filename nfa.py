@@ -1297,7 +1297,7 @@ class NFA:
         """get state isomorphism between dfas
         Returns False if no isomorphism
         """
-        # s = s.trim() ; o = o.trim()
+        s = s.trim() ; o = o.trim()
         assert s.is_det() & o.is_det()
         if s.I == o.I == set(): return True
         if list(map(len, (s.I, s.Q, s.F, s.Δ))) != list(map(len, (o.I, o.Q, o.F, o.Δ))) \
