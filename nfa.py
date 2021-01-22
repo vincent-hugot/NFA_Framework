@@ -46,6 +46,7 @@ class NFA:
     VISUPDF = "visu"    # name of default visualisation file
     VISULANG = 10       # default visualisation: how many language elements; zero to deactivate
     VISUSIZE = True     # default visualisation of automaton's size
+    VISUNAME = True     # default visualisation of automaton's name
     VISU_INITIAL_ARROW = True   # True for initial arrow, else special style
     VISURANKDIR="LR"    # dot parameter rankdir for graph direction / TB
     VISUFACTORISE = True     # factorise multiple transitions
@@ -75,6 +76,10 @@ class NFA:
         s.name=name
         s.worder=worder
         s._grow_step = None # for step by step constuctions
+        s.Moore_table = None
+        s.Moore_steps = 0
+        s.Moore_table_tex = ""
+        s.rm_eps_closures = None
 
     @property
     def F(s): return s._F
@@ -105,7 +110,10 @@ class NFA:
         for r in Δ: s.add_rule(*r,final=final)
         return s
 
-
+    @staticmethod
+    def clear():
+        """clear visualisation PDF"""
+        if os.path.isfile(f := f"{NFA.VISUPDF}.pdf"): os.remove(f)
 
     def trans_2(s):
         """get dict (p,a) -> set of q : delta total function"""
@@ -167,6 +175,12 @@ class NFA:
         for w in s.lang():
             if len(w) >= len(s.Q): return False
         return True
+
+    def __len__(s):
+        """cardinal of the language. math.inf if infinite"""
+        N = 200 # quick attempt for small finite languages
+        if len(l := list(s[:N])) < N: return len(set(l))
+        return len(set(s)) if s.is_finite() else math.inf
 
     @preserve
     def __matmul__(s,o):
@@ -546,7 +560,7 @@ class NFA:
 
 
     # returns epsilon-free version of automaton
-    def rm_eps(s):
+    def rm_eps(s,closures=False):
         look = s.trans_2()
         def clos(p):
             s = {p}
@@ -555,10 +569,12 @@ class NFA:
                 if s == ss : return s
                 s = ss
         def closs(s): return set().union(*( clos(p) for p in s ))
-        return NFA(closs(s.I), s.F,
+        res =  NFA(closs(s.I), s.F,
                    { (p,a,q)
                      for p,a in look if a != ''
                      for q in closs(look[p,a]) },name=s.nop('ε') )
+        if closures: res.rm_eps_closures = { q:clos(q) for q in res.Q }
+        return res
 
 
     def __call__(s,w,Q=None):
@@ -623,7 +639,8 @@ class NFA:
 
     @preserve
     def named(s, name):
-        s.name = name
+        """change name in place and return s"""
+        s.name = str(name)
         return s
 
     @preserve
@@ -674,14 +691,14 @@ class NFA:
         """return equivalent DFA; no epsilons need apply
         if pdf is specified, generate step by step slides"""
         if pdf: return s.dfa_pdf(pdf) # delegate visualisation
-        if not all( a != "" for a in s.Σ ): s = s.rm_eps().setnop('d')
-        if s.is_det(): return s.copy()
+        if not all( a != "" for a in s.Σ ): s = s.rm_eps()
+        if s.is_det(): return s.copy().setnop('d')
         l = s.trans_2()
         do, done, rlz  = { fset(s.I) }, set(), set()
         while do:
             P = do.pop(); done.add(P)
             for a in s.Σ:
-                Q = fset(set().union(*(l[p,a] for p in P)))
+                Q = fset(set.union(*(l[p,a] for p in P)))
                 if not Q: continue # useless: not coaccessible
                 rlz.add( (P,a,Q) )
                 if Q not in done: do.add(Q)
@@ -974,9 +991,11 @@ class NFA:
              dmod={},
              pdfname=None,
              pdfprepend=False,
+             pdfoverwrite=False,
+             pdfcrop=False,
              comment="",
              nocomment=False,
-             name=True,
+             name=None,
              lang=None,
              rankdir=None,
              initarrow=True,
@@ -1058,18 +1077,21 @@ class NFA:
             symbs = {}
             for p,a,q in s.Δ:
                 symbs[p,q] = symbs.get((p,q),[]) + [a]
+            def combine(p,q):
+                if len(S:= symbs[p,q]) == 1: return S[0] # there is a specific, greyed, style for eps alone
+                return breaker(", ".join(a if a else "ε" for a in sorted(S)))
 
             dmod2={}
             for k in set(dmod):
                 if k in s.Δ:
                     p,a,q = k
-                    if k in dmod: dmod2[(p,  breaker(", ".join(sorted(symbs[p,q])))  ,q)] = dmod[k]
+                    if k in dmod: dmod2[(p, combine(p,q) ,q)] = dmod[k]
                     for a in symbs[p,q]:
                         if (p,a,q) in dmod: del dmod[p,a,q]
             dmod.update(dmod2)
 
             s = NFA(s.I,s.F,
-                    { (p,  breaker(", ".join(sorted(symbs[p,q])))  ,q)
+                    { (p, combine(p,q) ,q)
                       for p,q in symbs})
 
         doublearrows = NFA.VISUDOUBLEARROWS if doublearrows is None else doublearrows
@@ -1098,6 +1120,7 @@ class NFA:
             """ \
                % (rankdir or NFA.VISURANKDIR)
         comment = comment or ""
+        name = NFA.VISUNAME if name is None else name
         if name and original.name:
             comment = f"<i><b>{(html.escape if escape_name else lambda x:x)(original.name)}</b></i>" + comment
 
@@ -1158,7 +1181,7 @@ class NFA:
             f.write('}')
 
         is_small = original.size < NFA.LARGE
-        do_dot(pdfname,pdfprepend,
+        do_dot(pdfname, pdfprepend=pdfprepend, pdfoverwrite=pdfoverwrite, pdfcrop=pdfcrop,
                renderer="dot" if is_small else NFA.LARGE_RENDERER,
                renderer_options= [] if is_small else NFA.LARGE_RENDERER_OPTIONS )
         if print_current: print(erase_line, end="")
@@ -1172,17 +1195,18 @@ class NFA:
 
     # automaton minimisation, Brzozowski method
     def Brzozowski(s,table=False):
-        return s.trim().reverse().dfa().reverse().dfa()
+        return s.trim().reverse().dfa().reverse().dfa().setnop("Br",s.name)
 
     # automaton minimisation
     def mini(s,*a,**k):
-        # r1 = s.Moore(*a, **k)
+        # r1 = s.Moore()
         # r2 = s.Moore2(*a, **k)
-        # r3 = s.Brzozowski(*a, **k)
+        # r3 = s.Brzozowski()
         # assert r1.iso(r2) and r2.iso(r3), (r1.visu(),r2.visu(),r3.visu())
+        # return r2
         return s.Moore2(*a, **k)
 
-    def Moore(s,table=False):
+    def Moore(s):
         """Automaton minimisation, Moore method
         SUPERCEDED by Moore2.
         I really hate the way I wrote this; I tried to emulate
@@ -1230,7 +1254,7 @@ class NFA:
                    ).trim().map(lambda x:fset(itog[x])).setnop("M", oname)
 
 
-    def Moore2(s,table=False):
+    def Moore2(s,table=False,data=False):
         """ Automaton minimisation, Moore method.
             :param table: print Moore table as side effect """
         oname = s.name
@@ -1266,13 +1290,18 @@ class NFA:
         classes = invd(cl[n][""]) # c -> set of states of class c
         rep = { c: next(iter(classes[c])) for c in classes } # representative of class
         if table: s._Moore_table(Q, symbs, cl,n)
-        return NFA(
+        res = NFA(
             { c for c in classes if classes[c] >= s.I },
             { c for c in classes if classes[c] & s.F },
             { (p,a,cl[n][a][rep[p]]) for p in classes for a in symbs }
         ).trim().map(f=lambda c:fset(classes[c])).setnop("M", oname)
+        if data:
+            res.Moore_table = cl
+            res.Moore_steps = n
+            res.Moore_table_tex = s._Moore_table(Q, symbs, cl,n,mode="return")
+        return res
 
-    def _Moore_table(s,Q,symbs,cl,n): # used from Moore2 only
+    def _Moore_table(s,Q,symbs,cl,n,mode=print): # used from Moore2 only
         cid='c<{\ \ }'
         bs = "\\"
         def esc(s):
@@ -1292,7 +1321,8 @@ class NFA:
             begin += "\hline"
 
         end = f"\end{{tabular}}\endgroup\n"
-        print(begin+end)
+        if mode == "return": return begin+end
+        mode(begin+end)
 
 
     def iso(s,o):
@@ -1398,7 +1428,7 @@ class NFA:
                dmod={ r:'color="#ddAAAA" fontcolor="#ddAAAA"' for r in s.Δ},
                comment="/"+str(h))
 
-    def table(s):
+    def table(s,mode=print):
         """latex transition table, printed as side effect"""
         # assert not s.I & s.F # not handled
         sy = sorted(s.Σ)
@@ -1424,7 +1454,8 @@ class NFA:
             begin+= "\\\\ \n"
 
         end = f"\hline\n\end{{tabular}}\n"
-        print(begin+end)
+        if mode == "return": return begin+end
+        mode(begin+end)
         return s
 
     @property
@@ -1515,6 +1546,29 @@ class NFA:
         r.Δ = { (p,a,q) for p,a,q in r.Δ if p not in r.F }
         return r.trim().renum().named(s.nop("pfmin"))
 
-
+    @staticmethod
+    def random_raw(n,s,pt,ni=1,nf=1,pe=0,ne=0,symbs=num_to_str,states=lambda x:x):
+        """
+        Return a random NFA. No reachability guarantee
+        :param n: number of states
+        :param s: number of symbols
+        :param pt: proba that a transition (p,a,q) occurs
+        :param ni: number of guaranteed initial states 0 ni-1
+        :param nf: number of guaranteed final states
+        :param ne: number of guaranteed epsilons
+        :param pe: proba that a transition p, epsilon, q occurs
+        :param states: transfo 0-n -> states
+        :param symbs:  transfo 0-s -> symbols, default a..zA..Z
+        """
+        assert ni <= n and nf <= n and ne < (n-1) ** 2
+        Q = tuple(map(states,range(n)))
+        I = tuple(map(states,range(ni)))
+        Σ = tuple(map(symbs,range(s)))
+        return NFA(I,rand.sample(Q,k=nf),
+                   [ (p,a,q) for p in Q for a in Σ for q in Q if rand.random() < pt ]
+                   + ( [ (p,"",q) for p in Q for q in Q if p != q if rand.random() < pe ] if pe else [] )
+                   + list(islice( ((p,"",q) for p in rand.sample(Q,n) for q in rand.sample(Q,n) if p != q) , ne))
+                   )
+        # transitions (p,x,p) should have twice the proba but I don't detect it ???
 
 

@@ -20,11 +20,14 @@
 from itertools import *
 # from functools import reduce
 import subprocess as sp
+import math
 from math import sqrt
 import os
 import tempfile, shutil as sh
 from shutil import copy
 from collections import defaultdict
+import random as rand
+from contextlib import contextmanager
 
 term_reset= "\u001b[0m"
 term_visu_style= "\u001b[1m\u001b[31m"
@@ -90,7 +93,8 @@ class fset(frozenset): # less ugly writing in subset constructions
 
 assert str(fset({1,2,3})) == '{1, 2, 3}'
 
-def do_dot(pdfname,pdfprepend, store=None, renderer="dot", renderer_options = []):
+def do_dot(pdfname,pdfprepend=False, pdfoverwrite=False, store=None, renderer="dot", renderer_options = [],
+           pdfcrop=False):
     assert sh.which("pdftk")
     assert sh.which(renderer)
     r = sp.run([renderer] + renderer_options + ["-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"],capture_output=True)
@@ -98,16 +102,24 @@ def do_dot(pdfname,pdfprepend, store=None, renderer="dot", renderer_options = []
     assert not r.returncode if renderer == "dot" else True
     # sfdp bad build Error: remove_overlap: Graphviz not built with triangulation library
     if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
+    if pdfcrop and sh.which("pdfcrop"):
+        r = sp.run(["pdfcrop", f"{pdfname}_fig.pdf", f"{pdfname}_figc.pdf"],capture_output=True)
+        if r.returncode: print(r)
+        sh.move(f"{pdfname}_figc.pdf",f"{pdfname}_fig.pdf")
     if os.path.isfile(pdfname + ".pdf"):
-        sp.run(["cp", pdfname + ".pdf", pdfname + "_copy.pdf"])
-        if pdfprepend:
-            sp.run(["pdftk", pdfname + "_fig.pdf", pdfname + "_copy.pdf", "cat", "output", pdfname + ".pdf"])
+        if pdfoverwrite:
+            sh.move(f"{pdfname}_fig.pdf", f"{pdfname}.pdf")
         else:
-            sp.run(["pdftk", pdfname + "_copy.pdf", pdfname + "_fig.pdf", "cat", "output", pdfname + ".pdf"])
+            sp.run(["cp", pdfname + ".pdf", pdfname + "_copy.pdf"])
+            if pdfprepend:
+                sp.run(["pdftk", pdfname + "_fig.pdf", pdfname + "_copy.pdf", "cat", "output", pdfname + ".pdf"])
+            else:
+                sp.run(["pdftk", pdfname + "_copy.pdf", pdfname + "_fig.pdf", "cat", "output", pdfname + ".pdf"])
     else:
-        sp.run(["mv", pdfname + "_fig.pdf", pdfname + ".pdf"])
+        sh.move(f"{pdfname}_fig.pdf", f"{pdfname}.pdf")
         sp.run(["touch", pdfname + ".pdf"]) # force viewer to update; with mv it doesn't always
-    sp.run(["rm", "-f"] + [f"{pdfname}_{x}.pdf" for x in ("fig", "copy")])
+    for f in [f"{pdfname}_{x}.pdf" for x in ("fig", "copy")]:
+        if os.path.isfile(f): os.remove(f)
     # maybe spool temp files in memory: https://docs.python.org/3.6/library/tempfile.html
 
 def do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
@@ -250,3 +262,27 @@ def rev_graph(g):
         for q in g[p]:
             gr[q].append(p)
     return gr
+
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)
+
+def num_to_str(n):
+    if n <= 25: return chr(97+n)
+    if n <= 51: return chr(65+n-26)
+    assert False
+
+# assert "".join(map(num_to_str,range(52))) == "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+@contextmanager
+def cd(dir):
+    currdir = os.getcwd()
+    os.chdir(os.path.expanduser(dir))
+    try: yield
+    finally: os.chdir(currdir)
+
+def texesc(s):
+    """tex string escape"""
+    return "".join('\\'+a if a in ('{','}') else a for a in s)

@@ -2,7 +2,7 @@
 from nfa import *
 
 #####################################
-sp.run(["rm", "-f", "visu.pdf"])
+NFA.clear()
 
 # NFA.NOVISU = True
 
@@ -586,6 +586,8 @@ def hard_minimisation():
     1 b 0 a 1
     """).visu().mini(table=tab).visu()
 
+    C = NFA.of_word("aaaa").complete().visu().mini(table=tab).visu()
+
 def main():
     exoEqualRegexp()
     even_odd()
@@ -613,6 +615,4 @@ def main():
 
 # NFA.NOVISU = True
 main()
-# minimisation_exo()
-
-
+# hard_minimisation()
