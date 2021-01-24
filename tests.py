@@ -374,6 +374,7 @@ def ctl_tests():
     kat.texvisu("0 \ 2 / 1 > 3", "3 lb 3")
 
     for f in [
+        q,
         (EX, p), (AX, p),
         (EG, p), (AG, p),
         (EF, (EG, p)),
@@ -616,3 +617,4 @@ def main():
 # NFA.NOVISU = True
 main()
 # hard_minimisation()
+# ctl_tests()
