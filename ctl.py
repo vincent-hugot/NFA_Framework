@@ -60,6 +60,28 @@ def f_str(f):
         return f"{Q}({f_str(g)} {O} {f_str(h)})"
     return "(" + f" {symb[o]} ".join(map(f_str,r)) + ")"
 
+symbtex = {
+        AND:        '\\land',
+        OR:         '\\lor',
+        NOT:        '\\neg',
+        FF:         '\\bot',
+        TT:         '\\top',
+        IMPLIES:    '\\simplies',
+        XOR:        '\\oplus',
+        EX: "\\exists\\NEXT", EU: "\\exists\\UNTI", AU:"\\forall\\UNTI",
+        AX:"\\forall\\NEXT", AG:"\\forall\\GENE", EG:"\\exists\\GENE", AF:"\\forall\\FINA", EF:"\\exists\\FINA"
+    }
+
+def f_tex(f):
+    if isatom(f): return symb[f] if type(f) is LogOps else  str(f)
+    o,*r = f
+    assert len(r) > 0
+    if len(r) == 1: return f"{{{symbtex[o]} {f_tex(r[0])}}}"
+    if len(so := symbtex[o]) == 2:
+        g,h = r ; Q,O = so
+        return f"{Q}{{{f_tex(g)} {O} {f_tex(h)}}}"
+    return "{" + f" {symbtex[o]} ".join(map(f_tex,r)) + "}"
+
 def subs(f):
     if isatom(f): return {f}
     return {f} | set.union(*(subs(φ) for φ in f[1:] ))
@@ -172,8 +194,11 @@ def check(A,l,f):
     return  l, { f : {q for q in l if f in l[q]} for f in subs_f }
 
 
+ATOMS = "atoms"
+SIMPLE = "simple"
+DETAILED = "detailed"
 
-CHECKVISU = ("atoms", "simple", "detailed")
+CHECKVISU = (ATOMS, SIMPLE, DETAILED)
 
 def checkvisu(A,labels,f,visu=None):
     """
@@ -182,22 +207,22 @@ def checkvisu(A,labels,f,visu=None):
     :param A: TS
     :param labels: dict state -> set of atomic labels. No side-effect
     :param f: CTL formula on same atomic labels
-    :param visu: which visualisations should be made: subcollection of ("atoms", "simple", "detailed")
+    :param visu: which visualisations should be made: subcollection of (ATOMS, SIMPLE, DETAILED)
     :return: as check: updated labels, dict subformula -> states that satisfy it
     """
     l = copy.deepcopy(labels)
     N = A.name
 
-    visu = visu if visu else CHECKVISU
+    visu = visu if visu is not None else CHECKVISU
 
-    if "atoms" in visu:
+    if ATOMS in visu:
         n = f"{N} : {f_str(f)}: atoms"
         A.label(l,f_str).named(n).visu(
             node_shape="box",epsilon_style="",size=False,break_strings=False)
 
     res = check(A,l,f)
 
-    if "simple" in visu:
+    if SIMPLE in visu:
         dmod = { q:
                  'color="#00BB00" fillcolor="#007700" penwidth=2 fontcolor=white'
                  if f in l[q] else
@@ -206,7 +231,7 @@ def checkvisu(A,labels,f,visu=None):
         n = f"{N} : {f_str(f)}: simple"
         A.named(n).visu(dmod=dmod,epsilon_style="",size=False)
 
-    if "detailed" in visu:
+    if DETAILED in visu:
         n = f"{N} : {f_str(f)}: detailed"
         l = { q: sorted(l[q], key=lambda x:(f_len(x),f_str(x))) for q in l }
         A.label(l,f_str).named(n).visu(
