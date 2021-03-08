@@ -79,6 +79,8 @@ class NFA:
         s.Moore_table = None
         s.Moore_steps = 0
         s.Moore_table_tex = ""
+        s.classes = None
+        s.inv_classes = None
         s.rm_eps_closures = None
 
     @property
@@ -859,6 +861,10 @@ class NFA:
         """language equivalence: s <= o <= s"""
         return bool(s.mini().renum(smart=False).iso(o.mini().renum(smart=False)))
 
+    def is_same(s,o):
+        """is literally the exact same NFA"""
+        return s.I == o.I and s.F == o.F and s.Δ == o.Δ
+
     def texvisu(s,*texargs,pdfname=None,pdfprepend=False,texout="__NFA__.tex",
                 silent=True,print_current=True,renum=False,**texkwargs):
         """TeXperiment: visualise pdf of tex output; same arguments as tex
@@ -1254,14 +1260,15 @@ class NFA:
                    ).trim().map(lambda x:fset(itog[x])).setnop("M", oname)
 
 
-    def Moore2(s,table=False,data=False):
+    def Moore2(s,table=False,data=False,preprocess=True):
         """ Automaton minimisation, Moore method.
             :param table: print Moore table as side effect """
         oname = s.name
-        s = s.trim().dfa().complete()
-        if not s.Q: return s.copy()
+        if preprocess: s = s.trim().dfa().complete()
+        else: s = s.copy()
+        if not s.Q: return s
         try: Q = sorted(s.Q)
-        except TypeError : Q = list(s.Q)
+        except TypeError : Q = sort_states(s.Q)
         symbs = sorted(s.Σ)
         cl = {} ## classes : { n : { symbol : { state: class }  } } symbol can be eps
         cl[0] = {}
@@ -1297,8 +1304,10 @@ class NFA:
         ).trim().map(f=lambda c:fset(classes[c])).setnop("M", oname)
         if data:
             res.Moore_table = cl
-            res.Moore_steps = n
+            res.Moore_steps = n+1
             res.Moore_table_tex = s._Moore_table(Q, symbs, cl,n,mode="return")
+            res.classes = classes
+            res.inv_classes = { fset(v):k for k,v in classes.items() }
         return res
 
     def _Moore_table(s,Q,symbs,cl,n,mode=print): # used from Moore2 only
@@ -1432,7 +1441,7 @@ class NFA:
         """latex transition table, printed as side effect"""
         # assert not s.I & s.F # not handled
         sy = sorted(s.Σ)
-        Q = sorted(s.Q, key=str)
+        Q = sort_states(s.Q)
         t = s.trans_2()
         cid='c<{{\ \ }}'
         bs = "\\"

@@ -41,11 +41,18 @@ erase_line = "\r\033[2K"
 # print a set in order
 # can need a renum if mixing incomparable types
 def sortstr(aset,l="{",r="}"):
+    return f"{l}{str(sort_states(aset))[1:-1]}{r}"
+
+def sort_states(Q):
+    """
+    :param Q: set of states
+    :return: same, ordered in a "nice" way
+    """
     try:
-        s = str(sorted(aset,key=lambda x:(len(x), str(x))))
+        return sorted(Q,key=lambda x:(len(x), str(x)))
     except TypeError:
-        s = str(sorted(aset,key=lambda x:( (0 if isinstance(x,int) else 1), str(x)  )))
-    return f"{l}{s[1:-1]}{r}"
+        return sorted(Q,key=lambda x:( (0 if isinstance(x,int) else 1), str(x)  ))
+
 
 def inputint(prompt="? ", default=0, upper=None):
     n = None
