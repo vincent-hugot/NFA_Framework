@@ -56,21 +56,22 @@ class NFA:
     LARGE_RENDERER_OPTIONS = ["-Goverlap=false"]  # additional graph renderer options
     LARGE = 800        # a NFA is considered large when it reaches this size
 
-    def __init__(s,I=(),F=(),Δ=(),name="",Q=set(),trimmed=False,worder=str):
+    def __init__(s,I=(),F=(),Δ=(),name="",Q=(),Σ=(),trimmed=False,worder=str):
         """
         :return: New NFA
         :param I: initial states
         :param F: final states
         :param Δ: rules (p,a,q)
         :param Q: additional states (if not in rules)
+        :param Σ: additional symbols (if not in rules)
         :param name: what's its name?
         :param trimmed: is it already trimmed? (avoid redoing it)
         :param worder: type of the words of the language. str / tuple
         """
         s.Δ = set()
-        s.Σ = set()
+        s.Σ = set(Σ)
         s._I, s._F = set(I), set(F)
-        s.Q = s._I | s._F | Q # if you need useless states, with no associated rules
+        s.Q = s._I | s._F | set(Q) # if you need useless states, with no associated rules
         s.add_rules(Δ)
         s._trimmed = trimmed
         s.name=name
@@ -797,7 +798,7 @@ class NFA:
     def __neg__(s):
         """language complementation"""
         on = s.name
-        s = s.dfa().complete()
+        s = s.dfa().complete(Σ=s.Σ-{''})
         return NFA(s.I, s.Q - s.F, s.Δ, name=f"{on} /-")
 
     def repr(s,N=20):
@@ -848,7 +849,7 @@ class NFA:
 
     def is_empty(s):
         """test whether language is empty"""
-        return not s.rm_eps().trim().Q
+        return not s.trim().Q
 
     def is_universal(s):
         """is universal on its *implicit* alphabet?"""
@@ -1200,7 +1201,7 @@ class NFA:
         NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,**kw)
 
     # automaton minimisation, Brzozowski method
-    def Brzozowski(s,table=False):
+    def Brzozowski(s):
         return s.trim().reverse().dfa().reverse().dfa().setnop("Br",s.name)
 
     # automaton minimisation
@@ -1268,7 +1269,7 @@ class NFA:
         else: s = s.copy()
         if not s.Q: return s
         try: Q = sorted(s.Q)
-        except TypeError : Q = sort_states(s.Q)
+        except TypeError : Q = (sort_states if data or table else list)(s.Q)
         symbs = sorted(s.Σ)
         cl = {} ## classes : { n : { symbol : { state: class }  } } symbol can be eps
         cl[0] = {}
@@ -1556,12 +1557,13 @@ class NFA:
         return r.trim().renum().named(s.nop("pfmin"))
 
     @staticmethod
-    def random_raw(n,s,pt,ni=1,nf=1,pe=0,ne=0,symbs=num_to_str,states=lambda x:x):
+    def random_raw(n,s,outd=3,pt=None,ni=1,nf=1,pe=0,ne=0,symbs=num_to_str,states=lambda x:x):
         """
         Return a random NFA. No reachability guarantee
         :param n: number of states
         :param s: number of symbols
-        :param pt: proba that a transition (p,a,q) occurs
+        :param outd: average out degree; determines pt
+        :param pt: proba that a transition (p,a,q) occurs; default=use outd
         :param ni: number of guaranteed initial states 0 ni-1
         :param nf: number of guaranteed final states
         :param ne: number of guaranteed epsilons
@@ -1569,15 +1571,41 @@ class NFA:
         :param states: transfo 0-n -> states
         :param symbs:  transfo 0-s -> symbols, default a..zA..Z
         """
-        assert ni <= n and nf <= n and ne < (n-1) ** 2
+        assert ni <= n and nf <= n and ne == 0 or ne <= n*(n-1) , f"{n=} {ni=} {nf=} {ne=}"
+        Σ = tuple(map(symbs, range(s)))
+        if n==0: return NFA(Σ=Σ,name="rand(n=0)")
+        if pt is None: pt = outd / (n*s)
         Q = tuple(map(states,range(n)))
         I = tuple(map(states,range(ni)))
-        Σ = tuple(map(symbs,range(s)))
+
         return NFA(I,rand.sample(Q,k=nf),
                    [ (p,a,q) for p in Q for a in Σ for q in Q if rand.random() < pt ]
                    + ( [ (p,"",q) for p in Q for q in Q if p != q if rand.random() < pe ] if pe else [] )
                    + list(islice( ((p,"",q) for p in rand.sample(Q,n) for q in rand.sample(Q,n) if p != q) , ne))
-                   )
+                   ).named(f"rand({n=},{s=},pt={pt:.2f},pe={pe:.2f},{ne=})")
         # transitions (p,x,p) should have twice the proba but I don't detect it ???
 
-
+    @staticmethod
+    def sanity_check():
+        """A complete workout: tests minimisations, dfa, trim, iso, complementation, intersection, rm_eps,
+        reverse, emptiness, universality, union...."""
+        for Q in range(0,1+10):
+            for ne in {0, Q//2} if Q else {0}:
+                for _ in range(1+50 if Q else 1):
+                    print(erase_line, Q, _,end='')
+                    A = NFA.random_raw(Q, rand.randint(1,4), 3,ne=ne)#.visu()
+                    M = A.Moore(); MM = A.Moore2(); MB = A.Brzozowski()
+                    mA = -A
+                    # A.visu(); M.visu()
+                    if (
+                      not M.is_same(MM) and MM.is_same(MB)
+                      or not A == M == MM == MB == A | M | MM | MB == A & M
+                      or not (A - M).is_empty()
+                      or not (A.is_universal() if mA.is_empty() else True)
+                      or not (mA.is_universal() if A.is_empty() else True)
+                    ):
+                        print("ALERT!")
+                        NFA.visutext("ALERT!")
+                        # for B in (A,M,MM,MB,A | M | MM | MB,mA): B.visu()
+                        for B in (A, A & M): B.visu()
+                        assert False

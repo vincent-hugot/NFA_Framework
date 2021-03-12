@@ -614,6 +614,8 @@ def main():
     synchro_prod_poly_example()
     hard_minimisation()
 
+# NFA.sanity_check()
+
 # NFA.NOVISU = True
 main()
 # hard_minimisation()
