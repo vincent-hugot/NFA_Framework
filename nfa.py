@@ -801,7 +801,7 @@ class NFA:
         s = s.dfa().complete(Σ=s.Σ-{''})
         return NFA(s.I, s.Q - s.F, s.Δ, name=f"{on} /-")
 
-    def repr(s,N=20):
+    def repr_txt(s,N=20):
         L = list(s[:N + 1]); L.sort()
         n = len(L) if len(L) < N else f"{N}+"
         return f"{s}L {n:<3} {sortstr(L)}"
@@ -812,7 +812,7 @@ class NFA:
 
 
     def test(s, N=50):
-        print(s.repr(N)); return s
+        print(s.repr_txt(N)); return s
 
     def __str__(s):
         return (f"NFA {s.name}:" if s.name else "")+ \
@@ -1557,7 +1557,7 @@ class NFA:
         return r.trim().renum().named(s.nop("pfmin"))
 
     @staticmethod
-    def random_raw(n,s,outd=3,pt=None,ni=1,nf=1,pe=0,ne=0,symbs=num_to_str,states=lambda x:x):
+    def random_raw(n=3,s=2,outd=3,pt=None,ni=1,nf=1,pe=0,ne=0,symbs=num_to_str,states=lambda x:x):
         """
         Return a random NFA. No reachability guarantee
         :param n: number of states
@@ -1585,6 +1585,10 @@ class NFA:
                    ).named(f"rand({n=},{s=},pt={pt:.2f},pe={pe:.2f},{ne=})")
         # transitions (p,x,p) should have twice the proba but I don't detect it ???
 
+    def repr(s):
+        """Python code for the NFA; only works well for basic states, due to str vs repr fuckery; see fset"""
+        return f"NFA(I={repr(s.I)},\nF={repr(s.F)},\nΔ={repr(s.Δ)},\nname={repr(s.name)})"
+
     @staticmethod
     def sanity_check():
         """A complete workout: tests minimisations, dfa, trim, iso, complementation, intersection, rm_eps,
@@ -1598,7 +1602,7 @@ class NFA:
                     mA = -A
                     # A.visu(); M.visu()
                     if (
-                      not M.is_same(MM) and MM.is_same(MB)
+                      not M.is_same(MM)
                       or not A == M == MM == MB == A | M | MM | MB == A & M
                       or not (A - M).is_empty()
                       or not (A.is_universal() if mA.is_empty() else True)

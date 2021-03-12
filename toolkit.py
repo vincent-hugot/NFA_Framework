@@ -92,10 +92,23 @@ def try_eval(s):
 
 class fset(frozenset): # less ugly writing in subset constructions
     def __init__(s,*args): super().__init__()
-    def __repr__(s): return super().__repr__()[5:-1] if s else '{}'
+    def __repr__(s): return s.__str__()
+    # Python str is fucked: str calls repr in container structures,
+    # so I can't really separate the two; if I put a true repr here,
+    # then tuples containing sets will call it and mess the display...
+    def repr(s): return super().__repr__()
+    def __str__(s): return f"{{{', '.join(map(str,s))}}}"
     def __or__(s,o): return fset(frozenset.__or__(s,o))
     def __and__(s, o): return fset(frozenset.__and__(s, o))
     def __sub__(s, o): return fset(frozenset.__sub__(s, o))
+
+# def deep_freeze(s):
+#     """deeply change structure to convert all sets into fsets"""
+#     try:
+#         i = iter(s)
+#     except TypeError:
+#         return s
+#     return type(s)(deep_freeze(x) for x in i)
 
 
 assert str(fset({1,2,3})) == '{1, 2, 3}'
