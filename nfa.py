@@ -797,6 +797,7 @@ class NFA:
     @preserve
     def __neg__(s):
         """language complementation"""
+        if s.is_empty(): return NFA.universal(s.Σ)
         on = s.name
         s = s.dfa().complete(Σ=s.Σ-{''})
         return NFA(s.I, s.Q - s.F, s.Δ, name=f"{on} /-")
@@ -853,7 +854,7 @@ class NFA:
 
     def is_universal(s):
         """is universal on its *implicit* alphabet?"""
-        return s.Σ and (-s).is_empty()
+        return s == NFA.universal(s.Σ)
 
     # language inclusion
     def __le__(s,o): return (s - o).is_empty()
@@ -1596,7 +1597,7 @@ class NFA:
         for Q in range(0,1+10):
             for ne in {0, Q//2} if Q else {0}:
                 for _ in range(1+50 if Q else 1):
-                    print(erase_line, Q, _,end='')
+                    print(erase_line, Q, _,end='', flush=True)
                     A = NFA.random_raw(Q, rand.randint(1,4), 3,ne=ne)#.visu()
                     M = A.Moore(); MM = A.Moore2(); MB = A.Brzozowski()
                     mA = -A
@@ -1605,11 +1606,11 @@ class NFA:
                       not M.is_same(MM)
                       or not A == M == MM == MB == A | M | MM | MB == A & M
                       or not (A - M).is_empty()
-                      or not (A.is_universal() if mA.is_empty() else True)
-                      or not (mA.is_universal() if A.is_empty() else True)
+                      or A.is_universal() != mA.is_empty()
+                      or mA.is_universal() != A.is_empty()
                     ):
-                        print("ALERT!")
-                        NFA.visutext("ALERT!")
-                        # for B in (A,M,MM,MB,A | M | MM | MB,mA): B.visu()
-                        for B in (A, A & M): B.visu()
+                        print("ALERT!") ; NFA.visutext("ALERT!")
+                        NFA.ERROR = A
+                        for B in (A, mA):
+                            print(B.repr()); B.visu()
                         assert False
