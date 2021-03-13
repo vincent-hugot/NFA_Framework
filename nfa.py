@@ -1594,10 +1594,11 @@ class NFA:
     def sanity_check():
         """A complete workout: tests minimisations, dfa, trim, iso, complementation, intersection, rm_eps,
         reverse, emptiness, universality, union...."""
+        x,y,z = 0,0,0
         for Q in range(0,1+10):
             for ne in {0, Q//2} if Q else {0}:
                 for _ in range(1+50 if Q else 1):
-                    print(erase_line, Q, _,end='', flush=True)
+                    print(erase_line, Q, _,"---", x,y,z,end='', flush=True)
                     A = NFA.random_raw(Q, rand.randint(1,4), 3,ne=ne)#.visu()
                     M = A.Moore(); MM = A.Moore2(); MB = A.Brzozowski()
                     mA = -A
@@ -1614,3 +1615,6 @@ class NFA:
                         for B in (A, mA):
                             print(B.repr()); B.visu()
                         assert False
+                    if A.is_universal(): x+=1
+                    if A.is_empty(): y += 1
+                    z += 1
