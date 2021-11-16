@@ -2,7 +2,7 @@
 from nfa import *
 from itertools import *
 
-sp.run(["rm", "-f", f"{NFA.VISUPDF}.pdf"])
+NFA.clear()
 NFA.VISUDOUBLEARROWS = False
 
 A = NFA.spec("""

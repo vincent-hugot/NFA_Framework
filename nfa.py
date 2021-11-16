@@ -542,18 +542,19 @@ class NFA:
         """language membership test"""
         return s(w) & s.F
 
-    def run(s,w,*p,**k):
+    def run(s,w,used_states=True,**k):
         """visualise a run on w; params as visu"""
         dmod={} ; e = s.I ; u = s.worder()
         for a in w+'Δ' if s.worder is str else w+('Δ',) : # final end-of-word unlikely symbol
             dmod.update({ q: 'color="#BB0000" fillcolor="#BB0000" penwidth=2 fontcolor=white' for q in e })
-            s.visu(dmod=dmod, comment="/R:"+str(u),*p,**k)
+            s.visu(dmod=dmod, comment="/R:"+str(u),**k)
             u += a if s.worder is str else (a,)
             dmod = { k: # formerly used states and transitions
-                         'color="#AA0000" fillcolor="#CC9999"'
+                         'color="#AA0000" fillcolor="#9999AA"'
                          if k in s.Q else
                          'color="#AA0000" fontcolor="#BB0000"'
                      for (k,v) in dmod.items()  }
+            if not used_states: dmod={}
             dmod.update({ (p,b,q):
                               'color="#BB0000" penwidth=1.2 fontcolor="#BB0000"'
                           for p,b,q in s.Δ if p in e and b == a  })
@@ -586,7 +587,7 @@ class NFA:
         :param w: the word
         :param Q:stating states: default: from initials
         """
-        assert all(a for a in s.Σ)
+        if "" in s.Σ: s = s.rm_eps()
         e = s.I if Q is None else Q
         for a in w:
             e = {q for p, b, q in s.Δ if p in e and b == a}
@@ -695,7 +696,7 @@ class NFA:
         if pdf is specified, generate step by step slides"""
         if pdf: return s.dfa_pdf(pdf) # delegate visualisation
         if not all( a != "" for a in s.Σ ): s = s.rm_eps()
-        if s.is_det(): return s.copy().setnop('d')
+        if s.is_det(): return s.copy().setnop('d') # todo always set of states; for Brzozowski
         l = s.trans_2()
         do, done, rlz  = { fset(s.I) }, set(), set()
         while do:
@@ -802,6 +803,9 @@ class NFA:
         s = s.dfa().complete(Σ=s.Σ-{''})
         return NFA(s.I, s.Q - s.F, s.Δ, name=f"{on} /-")
 
+    def __xor__(s,o):
+        return ((s|o) - (s&o)).setnop(name=f"({s.name} ⊖ {o.name})")
+
     def repr_txt(s,N=20):
         L = list(s[:N + 1]); L.sort()
         n = len(L) if len(L) < N else f"{N}+"
@@ -826,7 +830,6 @@ class NFA:
 
     def universal(al):
         """universal automaton on alphabet"""
-        assert al
         return NFA({0},{0}, { (0,a,0) for a in al },
                    name="/U:" + (r:=repr(al))[:20] + ("..." if len(r)>20 else ""),
                    trimmed=True )
@@ -861,11 +864,15 @@ class NFA:
 
     def __eq__(s,o):
         """language equivalence: s <= o <= s"""
+        # s,o = s.dfa(), o.dfa()
+        # for A,B in ((s,o), (o,s)): # attempts at optimisation make things slightly worse
+        #     for w in A[:2]:
+        #         if w not in B: return False
         return bool(s.mini().renum(smart=False).iso(o.mini().renum(smart=False)))
 
     def is_same(s,o):
         """is literally the exact same NFA"""
-        return s.I == o.I and s.F == o.F and s.Δ == o.Δ
+        return s.I == o.I and s.F == o.F and s.Δ == o.Δ and s.Σ == o.Σ
 
     def texvisu(s,*texargs,pdfname=None,pdfprepend=False,texout="__NFA__.tex",
                 silent=True,print_current=True,renum=False,**texkwargs):
@@ -1007,6 +1014,7 @@ class NFA:
              lang=None,
              rankdir=None,
              initarrow=True,
+             labeljust="l",
              size=None,
              doublearrows=None,
              break_strings=True,
@@ -1035,6 +1043,7 @@ class NFA:
         :param comment: top left label for graph
         :param name: name as default comment?
         :param lang: how many elements of language to display?
+        :param labeljust: l*,r,c: justif of name/size/lang text
         :param rankdir: LR or TB: direction of graphs; VISURANKDIR by default
         :param initarrow: use an arrow for initial state. Alternative: special style.
             Default is NFA.VISU_INITIAL_ARROW
@@ -1125,8 +1134,7 @@ class NFA:
             //ratio=compress
             size="8,5"
             edge [arrowhead=vee fontname = "palatino" arrowsize=.7];
-            """ \
-               % (rankdir or NFA.VISURANKDIR)
+            """ % (rankdir or NFA.VISURANKDIR)
         comment = comment or ""
         name = NFA.VISUNAME if name is None else name
         if name and original.name:
@@ -1144,10 +1152,10 @@ class NFA:
             L = list(original[:lang+1])
             comment += "<br/><br/>" + html.escape(sortstr(L[:lang])) + ("+" if len(L)>lang else "")
 
-        if comment and not nocomment: dotc += """
-            label=<%s>;
+        if comment and not nocomment: dotc += f"""
+            label=<{comment}>;
             labelloc=top;
-            labeljust=left;\n""" % comment
+            labeljust={labeljust};\n"""
         num = s.renum(smart=True,getiso=True)
 
         def accsrt(qs):
@@ -1212,9 +1220,9 @@ class NFA:
         # r3 = s.Brzozowski()
         # assert r1.iso(r2) and r2.iso(r3), (r1.visu(),r2.visu(),r3.visu())
         # return r2
-        return s.Moore2(*a, **k)
+        return s.Moore(*a, **k)
 
-    def Moore(s):
+    def Moore_old(s):
         """Automaton minimisation, Moore method
         SUPERCEDED by Moore2.
         I really hate the way I wrote this; I tried to emulate
@@ -1262,7 +1270,7 @@ class NFA:
                    ).trim().map(lambda x:fset(itog[x])).setnop("M", oname)
 
 
-    def Moore2(s,table=False,data=False,preprocess=True):
+    def Moore(s, table=False, data=False, preprocess=True):
         """ Automaton minimisation, Moore method.
             :param table: print Moore table as side effect """
         oname = s.name
@@ -1352,10 +1360,12 @@ class NFA:
         res = True
         def trav(p,P):
             nonlocal res,f
+            # print(p,P,f)
             if not res: return
             if p in f:
-                if f[p] != P or (p in s.F) != (P in o.F) : res = False
+                if f[p] != P: res = False; return
             else:
+                if (p in s.F) != (P in o.F): res = False; return
                 f[p] = P
                 for a in s.Σ:
                     if ((p,a) in l) != ((P,a) in m): res = False; return
@@ -1558,7 +1568,7 @@ class NFA:
         return r.trim().renum().named(s.nop("pfmin"))
 
     @staticmethod
-    def random_raw(n=3,s=2,outd=3,pt=None,ni=1,nf=1,pe=0,ne=0,symbs=num_to_str,states=lambda x:x):
+    def rand(n=3, s=2, outd=3, pt=None, ni=1, nf=1, pe=0, ne=0, symbs=num_to_str, states=lambda x:x):
         """
         Return a random NFA. No reachability guarantee
         :param n: number of states
@@ -1586,9 +1596,80 @@ class NFA:
                    ).named(f"rand({n=},{s=},pt={pt:.2f},pe={pe:.2f},{ne=})")
         # transitions (p,x,p) should have twice the proba but I don't detect it ???
 
+    @staticmethod
+    def rands(*a,**k):
+        """infinite stream of random NFA, as rand()"""
+        while True: yield NFA.rand(*a,**k)
+
     def repr(s):
         """Python code for the NFA; only works well for basic states, due to str vs repr fuckery; see fset"""
         return f"NFA(I={repr(s.I)},\nF={repr(s.F)},\nΔ={repr(s.Δ)},\nname={repr(s.name)})"
+
+    def future(s,q):
+        """future of state q: residual automaton"""
+        return NFA({q},s.F,s.Δ).trim().named(s.nop(f"⟦{q}⟦"))
+
+    def future_of_set(s,Q):
+        """future of nondetermnistic set of states: union of the futures"""
+        return NFA.union(*( s.future(q) for q in Q)).named(s.nop("∪".join(f"⟦{q}⟦" for q in Q)))
+
+    def quotient(s,eq):
+        print(s.Q)
+        classes = classes_of_equiv(s.Q,eq)
+        print("Q CLASSES", classes, list(map(len,classes)))
+        if all(len(c) == 1 for c in classes): return s.copy()
+        rep = { q:next(c for c in classes if q in c)[0] for q in s.Q}
+        # print(rep)
+        return s.map(f=rep.get).named(s.nop("q"))
+
+    def nmini(s,verbose=False):
+        """Get a minimal NFA. Algo = Vincent Hugot's patented, terrible, naive, crappy
+        improvised and unproven algorithm. WC Complexity = ? a lot ?
+        Will do [Kameda and Weiner, 70] some other time.
+        WORK IN PROGRESS
+        """
+        Aq = s.mini().named("dmini")
+        if verbose: Aq.visu()
+        def pp(*a,**k):
+            if verbose: print(*a,**k)
+        ## make sure basic states are non-redundent; implement general quotient operation
+        # canon = { q : A.future(q).mini().renum(smart=False) for q in A.Q }
+        # pp("CANON", canon)
+        # Aq = A.quotient(lambda p,q: canon[p].iso(canon[q]))#.renum()
+        # if verbose: Aq.visu()
+        ## now go to convert states into multiple transitions
+        canon = { Q : Aq.future_of_set(Q).mini().renum(smart=False) for Q in powerset(Aq.Q) if Q }
+        # print(canon)
+        # for Q in canon: canon[Q].visu()
+        classes = classes_of_equiv(canon, lambda P, Q: canon[P].iso(canon[Q]))
+        pp("CLASSES",classes)
+        repl = {}
+        for [(q,),*Qs] in (c for c in classes if c and len(c[0]) == 1):
+            Qs = [Q for Q in Qs if not (set(repl)|{q}) & set(Q)]
+            if Qs:
+                Rq = set(Qs[0])
+                pp(q,"-->",Rq)
+                pp(repl)
+                for p in repl:
+                    repl[p] = repl[p] - {q} | Rq if q in repl[p] else repl[p]
+                repl[q] = Rq
+                pp(repl)
+        pp("REPL",repl)
+        Δ = set()
+        for p,a,q in Aq.Δ:
+            if p not in repl:
+                if q in repl:
+                    Δ  |= { (p,a,r) for r in repl[q] }
+                else: Δ.add((p,a,q))
+        rm = set(repl)
+        res = NFA(Aq.I - rm, Aq.F - rm, Δ, name=s.nop("NM"))
+        if verbose: res.visu()
+        if not res == Aq:
+            NFA.ERROR = s,Aq,res
+            print(s.repr())
+            print("ALERT",list((Aq ^ res)[:10]))
+            assert False
+        return res
 
     @staticmethod
     def sanity_check():
@@ -1599,21 +1680,26 @@ class NFA:
             for ne in {0, Q//2} if Q else {0}:
                 for _ in range(1+50 if Q else 1):
                     print(erase_line, Q, _,"---", x,y,z,end='', flush=True)
-                    A = NFA.random_raw(Q, rand.randint(1,4), 3,ne=ne)#.visu()
-                    M = A.Moore(); MM = A.Moore2(); MB = A.Brzozowski()
+                    A = NFA.rand(Q, rand.randint(1, 4), 3, ne=ne)#.visu()
+                    Ad = A.dfa()
+                    M = A.Moore_old(); MM = A.Moore(); MB = A.Brzozowski()
                     mA = -A
-                    # A.visu(); M.visu()
+                    # canon = {q: A.future(q).mini() for q in Ad.Q} ## BUGS GALORE HERE
+                    # Aq = Ad.quotient(lambda p, q: canon[p].iso(canon[q]))
+                    # canon = {q: MM.future(q).mini() for q in  MM.Q}
+                    # AMq = MM.quotient(lambda p,q: canon[p].iso(canon[q]))
                     if (
-                      not M.is_same(MM)
+                      not M.is_same(MM) # todo make Br coherent
                       or not A == M == MM == MB == A | M | MM | MB == A & M
                       or not (A - M).is_empty()
                       or A.is_universal() != mA.is_empty()
                       or mA.is_universal() != A.is_empty()
+                      # or len(AMq.Q) != len(MM.Q) or len(Aq.Q) != len(MM.Q)
                     ):
                         print("ALERT!") ; NFA.visutext("ALERT!")
                         NFA.ERROR = A
-                        for B in (A, mA):
-                            print(B.repr()); B.visu()
+                        # for B in (A, Ad, Aq, MM, AMq):
+                        #     print(B.repr()); B.visu()
                         assert False
                     if A.is_universal(): x+=1
                     if A.is_empty(): y += 1

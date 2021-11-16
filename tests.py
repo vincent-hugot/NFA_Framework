@@ -589,6 +589,19 @@ def hard_minimisation():
 
     C = NFA.of_word("aaaa").complete().visu().mini(table=tab).visu()
 
+def nondet_vulgarise():
+    NFA.VISULANG = 0
+    # NFA.VISUSIZE = False
+    A = NFA( {0}, {3},
+        { (0,'a',0), (0,'b',0), (0,'a',1),
+          (1,'a',2), (1,'b',2),(2,'a',3),(2,'b',3)},
+        name="a__"
+    ).visu()
+
+    A.run("bababa",used_states=False,labeljust="c")
+    A.dfa(pdf=NFA.VISUPDF).visu()
+
+
 def main():
     exoEqualRegexp()
     even_odd()
@@ -615,5 +628,6 @@ def main():
     hard_minimisation()
 
 # NFA.sanity_check()
-# NFA.NOVISU = True
 main()
+# exo_explosive_det()
+

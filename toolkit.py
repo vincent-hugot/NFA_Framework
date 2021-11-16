@@ -138,6 +138,7 @@ def do_dot(pdfname,pdfprepend=False, pdfoverwrite=False, store=None, renderer="d
     else:
         sh.move(f"{pdfname}_fig.pdf", f"{pdfname}.pdf")
         sp.run(["touch", pdfname + ".pdf"]) # force viewer to update; with mv it doesn't always
+        # todo: Path('path/to/file.txt').touch()
     for f in [f"{pdfname}_{x}.pdf" for x in ("fig", "copy")]:
         if os.path.isfile(f): os.remove(f)
     # maybe spool temp files in memory: https://docs.python.org/3.6/library/tempfile.html
@@ -306,3 +307,21 @@ def cd(dir):
 def texesc(s):
     """tex string escape"""
     return "".join('\\'+a if a in ('{','}') else a for a in s)
+
+def classes_of_equiv(elems, eq):
+    classes = []
+    for e in elems:
+        for c in classes:
+            if eq(e,c[0]):
+                c.append(e)
+                break
+        else: classes.append([e])
+        ## TODO: opti for nmini: do not create new classes for non root elems
+    return classes
+
+if __debug__:
+    l = [1,2,3,10,11,12,30]
+    assert classes_of_equiv(l, lambda a,b: a//10 == b//10) == [[1, 2, 3], [10, 11, 12], [30]]
+    assert classes_of_equiv(l, lambda a,b: a%10  == b%10 ) == [[1, 11], [2, 12], [3], [10, 30]]
+
+
