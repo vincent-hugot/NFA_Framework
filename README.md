@@ -2,7 +2,7 @@
 
 Refer to the lecture notes on Celene.
 
-## To build the docker image
+## To build the docker image (provided by students)
 
 ```bash
 docker build -t verif_formelle .
