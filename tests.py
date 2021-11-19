@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from nfa import *
+from nfa import NFA
 
 #####################################
 NFA.clear()

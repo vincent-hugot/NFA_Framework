@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
-from nfa import *
-from itertools import *
+from nfa import NFA
 
-NFA.clear()
-NFA.VISUDOUBLEARROWS = False
+NFA.clear()         # clean visu.pdf on each run
+# NFA.NOVISU=True   # check that all runs without generating PDFs
 
 A = NFA.spec("""
 0
@@ -25,15 +24,11 @@ NFA.visutext("DETERMINISATION")
 A.visu().dfa().visu(doublearrows=True)
 
 NFA.visutext("PRODUCTS")
+from itertools import product
 
 (A & B).visu().dfa().visu().mini().visu()
 
 (A | B).visu().dfa().visu().mini().visu().renum().visu()
-
-# U = (A & B).named("U").visu()
-# U.F = set(product(A.F,B.Q)) | set(product(A.Q,B.F))
-# U.Q |= U.F
-# U.visu().mini().visu()
 
 NFA.visutext("COMPLETE")
 

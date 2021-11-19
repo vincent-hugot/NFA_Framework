@@ -1,7 +1,3 @@
-## Instructions for use
-
-Refer to the lecture notes on Celene.
-
 ## To build the docker image
 
 ```bash

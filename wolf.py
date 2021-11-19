@@ -12,7 +12,7 @@
 from nfa import *
 from itertools import *
 
-sp.run(["rm", "-f", f"{NFA.VISUPDF}.pdf"])
+NFA.clear()
 
 NFA.NOVISU = False
 NFA.VISULANG = 2
@@ -61,7 +61,7 @@ Farmer.F = { fset() }
 Farmer.visusteps()#(rankdir="TB")
 Farmer.map(f=lambda q: (
     ", ".join(q) + " \\n~~~~~~~\\n " + ", ".join(actors-q)
-)).visu(break_strings=False)
+)).visu(break_strings=False, pdfcrop=True)
 
 ##########################################################################
 ##########################################################################

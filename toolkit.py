@@ -78,13 +78,13 @@ def fresh_gen(s=()):
         k+=1
 
 if __debug__:
-    g = fresh_gen((1, 3, 5))
-    assert [next(g) for _ in range(5)] == [0, 2, 4, 6, 7]
-    Q = set()
-    g = fresh_gen(Q)
-    next(g)
-    Q.add(1)
-    assert  next(g) == 2
+    __g = fresh_gen((1, 3, 5))
+    assert [next(__g) for _ in range(5)] == [0, 2, 4, 6, 7]
+    __Q = set()
+    __g = fresh_gen(__Q)
+    next(__g)
+    __Q.add(1)
+    assert next(__g) == 2
 
 def try_eval(s):
     try: return eval(s)
