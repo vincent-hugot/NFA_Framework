@@ -207,7 +207,7 @@ def testproducts():
     _ = NFA.Stay
     C1=Char.copy().map(g=lambda x:"b" if x else "a").named("C1")
     C2=Char.copy().map(g=lambda x:"B" if x else "A").named("C2")
-
+    from itertools import product
     NFA._sprod2_brutal(Char, Char, {(0, 0), (1, 1)}).visu()
     NFA._sprod2_brutal(Char, Char, set(product([0, 1], repeat=2))).visu()
     NFA._sprod2_brutal(Char, Char, {(_, 0), (_, 1) , (1, _)}).visu()
