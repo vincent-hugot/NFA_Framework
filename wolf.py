@@ -10,7 +10,6 @@
 
 
 from nfa import *
-from itertools import *
 
 NFA.clear()
 
@@ -24,9 +23,9 @@ actors = fset(actorsv)
 
 NFA.visutext("Naïve method")
 
-Farmer = NFA(
+FWGC_Problem = NFA(
     {actors},
-    name="Farmer",
+    name="FWGC",
     worder=tuple
 ).visu()
 
@@ -36,6 +35,7 @@ def _licit(s):
 def licit(q):
    return _licit(q) and _licit(actors - q)
 
+# def licit(Q): return True # what if no constraints?
 
 def growfarmer(A):
     has=False
@@ -55,11 +55,11 @@ def growfarmer(A):
     return has
 
 
-Farmer.growtofixpoint(growfarmer, record_steps=True)
-Farmer.F = { fset() }
+FWGC_Problem.growtofixpoint(growfarmer, record_steps=True)
+FWGC_Problem.F = {fset()}
 
-Farmer.visusteps()#(rankdir="TB")
-Farmer.map(f=lambda q: (
+FWGC_Problem.visusteps()#(rankdir="TB")
+FWGC_Problem.map(f=lambda q: (
     ", ".join(q) + " \\n~~~~~~~\\n " + ", ".join(actors-q)
 )).visu(break_strings=False, pdfcrop=True)
 
