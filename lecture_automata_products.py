@@ -25,6 +25,7 @@ A.visu().dfa().visu(doublearrows=True)
 
 NFA.visutext("PRODUCTS")
 from itertools import product
+A.visu(); B.visu()
 
 (A & B).visu().dfa().visu().mini().visu()
 
