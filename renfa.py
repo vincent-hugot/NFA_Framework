@@ -17,6 +17,7 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+# McNaughton–Yamada–Thompson's algorithm.
 
 from dataclasses import dataclass
 from nfa import *
@@ -32,28 +33,26 @@ class BinOp:
     r: object
 
 class OR (BinOp):
-    symb = "|"
+    symb = " | "
 
 class CONCAT (BinOp):
-    symb = "."
+    symb = ""
 
 @dataclass
 class STAR: e : object
 
-e = CONCAT(STAR(OR(VOID(), WRD("ab"))), WRD(""))
-
-print(e)
+def needsparent(s): return len(s) > 1 and s[0]+s[-1] != "()"
 
 def restr(e):
     match e:
         case VOID() :       return "∅"
         case WRD(""):       return "ɛ"
         case WRD(w) :       return w
-        case BinOp(l,r):    return f"({restr(l)} {e.symb} {restr(r)})"
-        case STAR(e):       return f"({restr(e)})*"
-        case _:             raise ValueError(e)
-
-print(restr(e))
+        case BinOp(l,r):    return f"({restr(l)}{e.symb}{restr(r)})"
+        case STAR(e):
+            s = restr(e)
+            return f"({s})*" if needsparent(s) else f"{s}*"
+        case _: raise ValueError(e)
 
 def reaut(e):
     match e: # invariant: all states numerical
@@ -81,30 +80,30 @@ def reaut(e):
                 (next(iter(A.F)), "", "f")} | A.Δ ).renum()
         case _:  raise ValueError(e)
 
-NFA.clear()
-# reaut(VOID()).visu()
-# reaut(WRD("")).visu()
-# reaut(WRD("ab")).visu()
-# reaut(A := OR(WRD("ab"), WRD(""))).visu()
-# reaut(CONCAT(A, WRD("cd"))).visu()
-# reaut(STAR(A)).visu()
-e = STAR(OR(WRD("ab"), WRD("")))
+class E:
+    def __init__(s,*args):
+        match args:
+            case []: s.e = VOID()
+            case [str() as x] : s.e = WRD(x)
+            case [_ as x]: s.e = x
 
-def handle(e):
-    reaut(e).visu().rm_eps().visu().trim().visu().dfa().visu().mini().visu().renum().visu()
+    def __repr__(s):
+        x = restr(s.e)
+        return x if len(x) <= 1 or x[0]+x[-1] != "()" else x[1:-1]
 
-f = STAR(
-    OR(
-        OR(WRD("aa"), WRD("bb")),
-        CONCAT(
-            CONCAT(
-                OR(WRD("ab"), WRD("ba")),
-                STAR(OR(WRD("aa"), WRD("bb"))),
-            ),
-            OR(WRD("ab"), WRD("ba"))
-        )
-    )
-)
+    def __or__(s, o):   return E(OR(s.e,o.e))
+    def __add__(s,o):   return E(CONCAT(s.e,o.e))
+    def star(s):        return E(STAR(s.e))
 
-handle(e)
-handle(f)
+    def MYT(s): return reaut(s.e).named(f"{s}") # McNaughton–Yamada–Thompson
+
+    def mini(s): return s.MYT().rm_eps().trim().mini().renum().named(f"{s} /M")
+
+    def show(s):
+        s.MYT().visu() ; s.mini().visu()
+        return s
+
+    def show_all(s):
+        s.MYT().visu().rm_eps().visu().trim().visu().dfa().visu().mini().visu().renum().visu()
+        return s
+
