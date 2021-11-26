@@ -1,5 +1,5 @@
 
-# Copyright 2019,  Vincent Hugot <vincent.hugot@insa-cvl.fr>
+# Copyright 2019-2021,  Vincent Hugot <vincent.hugot@insa-cvl.fr>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
