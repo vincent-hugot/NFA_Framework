@@ -6,10 +6,17 @@ NFA.clear()
 NFA.visutext("Thompson Example from Lectures")
 eg_lec = (E("ab") | E("")).star().show_all()
 
-NFA.visutext("A very horrible rat. exp. (Exercise)")
-eg_horrible = ( E("aa") | E("bb") |
-                ( (E("ab") | E("ba")) +  (E("aa") | E("bb")).star() + (E("ab") | E("ba")) ) ).star()
-eg_horrible.show_all()
+NFA.visutext("Simplify Expressions (Exercise)")
+
+a, b, eps = E("a"), E("b"), E("")
+mystery = ( eps | a.star()+(b+a.star()).star()+b )+a.star()
+mystery.show()
+mystery2 = ( eps | a.star()+( eps | b+(a.star()+b).star()+a.star() )+b )+a.star()
+mystery2.show()
+
+ba_BA = (E("aa") | E("bb") |
+         ( (E("ab") | E("ba")) +  (E("aa") | E("bb")).star() + (E("ab") | E("ba")) )).star()
+ba_BA.show()
 
 NFA.spec("""
 AB

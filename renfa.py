@@ -19,6 +19,9 @@
 
 # McNaughton–Yamada–Thompson's algorithm.
 
+# Students: pattern-matching techniques in this file are documented in my lecture notes, sections
+# "Advanced structural pattern matching" and "A smidgen of Computer Algebra".
+
 from dataclasses import dataclass
 from nfa import *
 
@@ -106,4 +109,3 @@ class E:
     def show_all(s):
         s.MYT().visu().rm_eps().visu().trim().visu().dfa().visu().mini().visu().renum().visu()
         return s
-
