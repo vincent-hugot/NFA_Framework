@@ -18,7 +18,7 @@ NFA.VISULANG = 2
 NFA.VISU_INITIAL_ARROW = False
 NFA.VISUDOUBLEARROWS = True
 
-actorsv = defcst("wolf", "goat", "cabb", "farmer", namespace=globals())
+actorsv = wolf, goat, cabb, farmer = "Wolf", "Goat", "Cabb", "Farmer"
 actors = fset(actorsv)
 
 NFA.visutext("Naïve method")
@@ -85,7 +85,7 @@ P = NFA.nsprod(*(reversed(sysv)),
                sds=sds,
                filter=prodfilter,
                # nice=True, # breaks visusteps if true
-               record_steps=True
+               # record_steps=True
                ).visu()
 
 print(repr(P))
