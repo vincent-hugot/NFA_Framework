@@ -99,6 +99,7 @@ class E:
     def star(s):        return E(STAR(s.e))
 
     def MYT(s): return reaut(s.e).named(f"{s}") # McNaughton–Yamada–Thompson
+    def nfa(s): return s.MYT()
 
     def mini(s): return s.MYT().rm_eps().trim().mini().renum().named(f"{s} /M")
 

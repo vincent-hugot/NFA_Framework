@@ -94,7 +94,7 @@ class NFA:
     def I(s): return s._I
 
     @I.setter
-    def I(s, I): s.Q |= I; s._I = I
+    def I(s, I): s._I = set(I); s.Q |= s._I
 
     def add_rule(s,p,a,q,final=False):
         s.Δ.add((p,a,q))
@@ -444,10 +444,19 @@ class NFA:
             R = R.dnice()
         return R.named("(" + " ⨉ ".join(c or "None" for c in C) + ")")
 
-    def dnice(s):
-        """nicer states and transitions for dictionary-based product automata"""
-        def nice(x): return f"{', '.join([f'{cn}:{a}' for cn, a in x])}"
-        return  s.map(f=nice, g=nice)
+    def dnice(s,f=None, g=None):
+        """nicer states and transitions for dictionary-based product automata.
+        f, g as map; predefined: "dict", "states", "systems"
+        """
+        def dict(x): return ', '.join(f'{cn}:{a}' for cn, a in x)
+        def states(x): return ''.join(str(a) for _,a in x)
+        def systems(x): return ''.join(str(a) for a,_ in x)
+        def dispatch(fid,default):
+            if fid is None: return default
+            return {"dict": dict, "states": states, "systems": systems}[fid]
+        f = dispatch(f,dict); g = dispatch(g,dict)
+        return  s.map(f,g)
+
 
     def label(s, l, f_str):
         bs = '\\'
@@ -815,6 +824,10 @@ class NFA:
         return f"<NFA {s.name} #{s.size} Σ{len(s.Σ)} Q{len(s.Q)} I{len(s.I)} F{len(s.F)} Δ{len(s.Δ)}>"\
                f"{':Trim' if s._trimmed else ''}"
 
+    def export(s):
+        """export as Python code"""
+        return f"NFA(I={repr(s.I)},F={repr(s.F)},Δ={repr(s.Δ)})"
+
 
     def test(s, N=50):
         print(s.repr_txt(N)); return s
@@ -991,10 +1004,13 @@ class NFA:
 
         r += f"  \\path [->]\n"
         tr = s.trans_pq()
+        def streps(s):
+            if s == "": return "\\varepsilon"
+            return str(s)
         for (p,q),A in tr.items():
             r += f"{i}({p})  edge  [{defloop+',' if p==q else ''}" \
                  f"{b.get((p,q), defavoidbend if p!=q and (q,p) in tr else defbend)}]  " \
-                 f"node {{{', '.join(sorted(map(str,A)))}}} ({q})\n"
+                 f"node {{{', '.join(sorted(map(streps,A)))}}} ({q})\n"
 
         r += ";\n\\end{tikzpicture}"
         return r

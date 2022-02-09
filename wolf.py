@@ -58,7 +58,7 @@ def growfarmer(A):
 FWGC_Problem.growtofixpoint(growfarmer, record_steps=True)
 FWGC_Problem.F = {fset()}
 
-FWGC_Problem.visusteps()#(rankdir="TB")
+##FWGC_Problem.visusteps()#(rankdir="TB")
 FWGC_Problem.map(f=lambda q: (
     ", ".join(q) + " \\n~~~~~~~\\n " + ", ".join(actors-q)
 )).visu(break_strings=False, pdfcrop=True)
@@ -79,9 +79,9 @@ sysv = [Char.copy().named(x) for x in actorsv]
 sds = [{farmer:x, a:x} for a in actors for x in (0, 1)]
 
 def prodfilter(A, P, v, Q):
-    return Q not in A.Q and licit(invd(Q)[0]) # not in Q optional: cycles or not.
+    return Q not in A.Q and _licit(invd(Q)[0]) and _licit(invd(Q)[1]) # not in Q optional: cycles or not.
 
-P = NFA.nsprod(*(reversed(sysv)),
+P = NFA.nsprod(*sysv,
                sds=sds,
                filter=prodfilter,
                # nice=True, # breaks visusteps if true
@@ -91,3 +91,4 @@ P = NFA.nsprod(*(reversed(sysv)),
 print(repr(P))
 # P.visusteps()
 P.dnice().visu()
+P.dnice(f="states").visu()

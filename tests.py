@@ -627,15 +627,5 @@ def main():
     synchro_prod_poly_example()
     hard_minimisation()
 
-# NFA.sanity_check()
-##main()
-# exo_explosive_det()
-Digi = NFA.of_word("123")
-
-# for c in "01234567890":
-for c in "x123":
-        Digi.add_rule(0,c,0)
-Digi.name="Digicode"
-Digi.visu()
-
-Digi.run("123123")
+##NFA.sanity_check()
+main()
