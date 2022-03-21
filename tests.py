@@ -589,6 +589,7 @@ def hard_minimisation():
 
     C = NFA.of_word("aaaa").complete().visu().mini(table=tab).visu()
 
+@ann
 def nondet_vulgarise():
     NFA.VISULANG = 0
     # NFA.VISUSIZE = False
@@ -601,6 +602,39 @@ def nondet_vulgarise():
     A.run("bababa",used_states=False,labeljust="c")
     A.dfa(pdf=NFA.VISUPDF).visu()
 
+
+@ann
+def transition_deterministic_minimisation():
+    A = NFA.spec("""
+    0 2 4
+    1 3 5
+    0 a 0 b 0
+    0 c 1
+    2 a 2 c 2
+    2 b 3
+    4 b 4 c 4
+    4 a 5
+    """).visu()
+
+    A.mini().visu()
+    A.trans_det_mini().visu()
+
+    B = NFA.spec("""
+    0 5
+    1 2 6 7 8 9
+    0 a 1
+    1 a 2
+    2 a 0
+
+    5 a 6
+    6 a 7
+    7 a 8
+    8 a 9
+    9 a 5
+    """)
+
+    B.visu().mini().visu()
+    B.trans_det_mini().visu()
 
 def main():
     exoEqualRegexp()
@@ -626,6 +660,9 @@ def main():
     verif_mini_prog()
     synchro_prod_poly_example()
     hard_minimisation()
+    transition_deterministic_minimisation()
 
-##NFA.sanity_check()
-main()
+# NFA.sanity_check()
+
+# transition_deterministic_minimisation()
+

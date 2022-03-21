@@ -1238,6 +1238,12 @@ class NFA:
         # return r2
         return s.Moore(*a, **k)
 
+    def trans_det_mini(s,*a,**k):
+        "Naive minimisation for multiinit transistion-deterministic automata"
+        assert all( len(v) <= 1 for _,v in s.trans_2().items() )
+        return s.trim().complete().Moore(*a, preprocess=False, **k).named(s.nop("tdM"))
+
+
     def Moore_old(s):
         """Automaton minimisation, Moore method
         SUPERCEDED by Moore2.
@@ -1324,7 +1330,7 @@ class NFA:
         rep = { c: next(iter(classes[c])) for c in classes } # representative of class
         if table: s._Moore_table(Q, symbs, cl,n)
         res = NFA(
-            { c for c in classes if classes[c] >= s.I },
+            { c for c in classes if classes[c] & s.I },
             { c for c in classes if classes[c] & s.F },
             { (p,a,cl[n][a][rep[p]]) for p in classes for a in symbs }
         ).trim().map(f=lambda c:fset(classes[c])).setnop("M", oname)
