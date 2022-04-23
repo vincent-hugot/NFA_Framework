@@ -614,10 +614,13 @@ def transition_deterministic_minimisation():
     2 b 3
     4 b 4 c 4
     4 a 5
-    """).visu()
+    ""","UniqueLastLetter").visu()
 
-    A.mini().visu()
-    A.trans_det_mini().visu()
+    A.mini().visu() #.reverse().trim().visu().dfa().visu().reverse().visu()
+    A.mini().trans_det_Moore().visu()
+    A.mini().tdBrzozowski().visu()
+    A.trans_det_Moore().visu()
+    A.tdBrzozowski().visu()
 
     B = NFA.spec("""
     0 5
@@ -631,10 +634,13 @@ def transition_deterministic_minimisation():
     7 a 8
     8 a 9
     9 a 5
-    """)
+    """, "NotMultipleOf15")
 
     B.visu().mini().visu()
-    B.trans_det_mini().visu()
+    B.trans_det_Moore().visu()
+    B.tdBrzozowski().visu()
+
+    # example the first letter never appears again.
 
 def main():
     exoEqualRegexp()

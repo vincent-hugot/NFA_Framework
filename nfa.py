@@ -614,7 +614,7 @@ class NFA:
         return x
 
     def reverse(s):
-        return NFA(s.F, s.I, { (q,a,p) for p,a,q in s.Δ } )
+        return NFA(s.F, s.I, { (q,a,p) for p,a,q in s.Δ }, name=s.nop('←') )
 
     def coaccessibles(s):
         return s.reverse().accessibles()
@@ -700,14 +700,15 @@ class NFA:
     def copy(s): return NFA(s.I, s.F, s.Δ, Q=s.Q, trimmed=s._trimmed, name=s.name)
 
     @preserve
-    def dfa(s,pdf=None):
+    def dfa(s,pdf=None, multi_init=False):
         """return equivalent DFA; no epsilons need apply
         if pdf is specified, generate step by step slides"""
         if pdf: return s.dfa_pdf(pdf) # delegate visualisation
         if not all( a != "" for a in s.Σ ): s = s.rm_eps()
         if s.is_det(): return s.copy().setnop('d') # todo always set of states; for Brzozowski
         l = s.trans_2()
-        do, done, rlz  = { fset(s.I) }, set(), set()
+        do, done, rlz  = { fset(s.I) } if not multi_init else { fset({i}) for i in s.I }, set(), set()
+        q_init = do.copy()
         while do:
             P = do.pop(); done.add(P)
             for a in s.Σ:
@@ -715,9 +716,9 @@ class NFA:
                 if not Q: continue # useless: not coaccessible
                 rlz.add( (P,a,Q) )
                 if Q not in done: do.add(Q)
-        return NFA({ fset(s.I) },
+        return NFA(q_init,
                    { P for P in done if s.F & P },
-                   rlz, name=s.nop('d'))
+                   rlz, name=s.nop('d' if not multi_init else 'mid'))
 
     @preserve
     def dfa_pdf(s,pdf=None):
@@ -1225,9 +1226,15 @@ class NFA:
         """create a pdf page with the given text"""
         NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,**kw)
 
-    # automaton minimisation, Brzozowski method
     def Brzozowski(s):
+        "automaton minimisation, Brzozowski method"
         return s.trim().reverse().dfa().reverse().dfa().setnop("Br",s.name)
+
+    def tdBrzozowski(s):
+        "transition-deterministic automaton minimisation, Brzozowski method"
+        A = s.trim().reverse().dfa(multi_init=True).reverse().dfa().setnop("tdBr1",s.name)
+        B = s.trim().reverse().dfa().reverse().dfa(multi_init=True).setnop("tdBr2",s.name)
+        return min(A,B, key=lambda x:len(x.Q))
 
     # automaton minimisation
     def mini(s,*a,**k):
@@ -1238,7 +1245,7 @@ class NFA:
         # return r2
         return s.Moore(*a, **k)
 
-    def trans_det_mini(s,*a,**k):
+    def trans_det_Moore(s, *a, **k):
         "Naive minimisation for multiinit transistion-deterministic automata"
         assert all( len(v) <= 1 for _,v in s.trans_2().items() )
         return s.trim().complete().Moore(*a, preprocess=False, **k).named(s.nop("tdM"))
