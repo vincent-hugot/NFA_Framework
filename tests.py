@@ -672,3 +672,4 @@ def main():
 
 # transition_deterministic_minimisation()
 
+main()
