@@ -650,7 +650,6 @@ class NFA:
             if o: s.name = s.nop(o)
         return s
 
-    @preserve
     def named(s, name):
         """change name in place and return s"""
         s.name = str(name)
@@ -1408,9 +1407,9 @@ class NFA:
         """
         :param x: the spec
         :param Qtype: constructor for states, eg int; defaults, evaluates python if possible
-        :param Ttype: constructor for transitions
+        :param Ttype: constructor for transition symbols
         :param style:
-            Spec format: intials "p q r" on 1st line, finals on second,
+            Spec format: initials "p q r" on 1st line, finals on second,
                 use __ for empty set
             rules on other lines, depends on style.
 
@@ -1422,7 +1421,7 @@ class NFA:
 
             style polar: rules "p a b c ... z q", one per line.
                 Not well supported
-        :type kwargs: remaming arguments passed to NFA constructor
+        :type kwargs: remaining arguments passed to NFA constructor
         :return: new NFA from compact spec
         """
         i,f,*r = (ll for l in x.splitlines() if (ll := l.strip()))
@@ -1573,19 +1572,19 @@ class NFA:
         return R
 
     def prefixes(s):
-        """returns languages of prefixes"""
+        """returns language of prefixes"""
         r = s.trim()
         r.F = r.Q
         return r.named(s.nop("pref"))
 
     def suffixes(s):
-        """returns languages of suffixes"""
+        """returns language of suffixes"""
         r = s.trim()
         r.I = r.Q
         return r.named(s.nop("suff"))
 
     def factors(s):
-        """returns languages of factors"""
+        """returns language of factors"""
         r = s.trim()
         r.I = r.Q; r.F = r.Q
         return r.named(s.nop("factors"))
@@ -1699,6 +1698,34 @@ class NFA:
             print("ALERT",list((Aq ^ res)[:10]))
             assert False
         return res
+
+    def AMC(s, Qadd=()):
+        t = ""; tr = s.trans_2()
+        Q = sort_states(s.Q | set(Qadd))
+        def c(b): return "\\"+ ("c" if b else "w") +"c{}\hspace*{-2em}"
+        for a in sorted(s.Σ):
+            t += f"$\\xto{{{a}}}$ & " + " & ".join(map(texesc,Q)) + "\\\\\n"
+            for p in Q:
+                t+= texesc(p) + " & " + " & ".join( c( (p,a,q) in s.Δ ) for q in Q) + "\\\\\n"
+            t+= "\\midrule\n"
+
+        template = """
+        \element{general}{
+        \\begin{questionmult}{NFA__<QNAME>}
+        Give the transition table for <QNAME>:
+        \\begin{choicescustom}[o]
+        \\begin{center}
+        \\begin{tabular}{<TABS>}
+        <TABLE>\end{tabular}
+        \end{center}
+        \end{choicescustom}
+        \end{questionmult}}
+        """.replace('    ','').replace("<QNAME>", s.name).replace("<TABS>", "l"*(len(Q)+1)).replace("<TABLE>", t)
+
+
+
+        print(template)
+
 
     @staticmethod
     def sanity_check():

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from nfa import NFA
+from toolkit import powerfset
 
 #####################################
 NFA.clear()
@@ -641,6 +642,18 @@ def transition_deterministic_minimisation():
     B.tdBrzozowski().visu()
 
     # example the first letter never appears again.
+
+def _AMC():
+    A = NFA.spec("""
+    0
+    1
+    0 a 0 a 1 b 1 a 2
+    1 a 1 b 0
+    2 a 0""", "test")
+
+    A.visu().dfa().visu()
+    A.AMC()
+    A.dfa().AMC(Qadd=powerfset(A.Q) - {fset()})
 
 def main():
     exoEqualRegexp()
