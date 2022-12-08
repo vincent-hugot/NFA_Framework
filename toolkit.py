@@ -90,6 +90,7 @@ def try_eval(s):
     try:
         r = eval(s)
         assert type(r) in (str, int, float, tuple, list, set, dict)
+        return r
     except: return s
 
 class fset(frozenset): # less ugly writing in subset constructions
