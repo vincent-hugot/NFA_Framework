@@ -715,6 +715,7 @@ def main():
     synchro_prod_poly_example()
     hard_minimisation()
     transition_deterministic_minimisation()
+    process_language_v1()
 
 # NFA.sanity_check()
 
