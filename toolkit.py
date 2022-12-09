@@ -18,7 +18,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from itertools import *
-# from functools import reduce
+from functools import reduce
 import subprocess as sp
 import math
 from math import sqrt
@@ -89,7 +89,8 @@ if __debug__:
 def try_eval(s):
     try:
         r = eval(s)
-        assert type(r) in (str, int, float, tuple, list, set, dict)
+        assert type(r) in (str, int, float)
+        return r
     except: return s
 
 class fset(frozenset): # less ugly writing in subset constructions
@@ -320,6 +321,10 @@ def classes_of_equiv(elems, eq):
         else: classes.append([e])
         ## TODO: opti for nmini: do not create new classes for non root elems
     return classes
+
+def peek(*ss):
+    """get an element out of every set; like pop() but non-destructive"""
+    return [ next(iter(s)) for s in ss ]
 
 if __debug__:
     l = [1,2,3,10,11,12,30]

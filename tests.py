@@ -655,6 +655,41 @@ def _AMC():
     A.AMC()
     A.dfa().AMC(Qadd=powerfset(A.Q) - {fset()})
 
+@ann
+def process_language_v1():
+    NFA.VISULANG = 0
+    As, sync = NFA.processes("""
+    bool        W0   := False   # process 0 wants critical access
+    bool        W1   := False   # process 1 wants critical access
+    int[0,1]    Turn := 0       # Whose turn is this ?
+
+    process P0:
+      while True {
+        # noncritical section
+        W0    := True;
+        Turn  := 1;
+        wait W1 = False or Turn = 0;
+        # critical section
+        W0    := False;
+      }
+
+    process P1:
+      while True {
+        # noncritical section
+        W1    := True;
+        Turn  := 0;
+        wait  W0 = False or Turn = 1;
+        # critical section
+        W1    := False;
+        }
+    """)
+
+    print(sync)
+    for A in As: A.visu()
+    res = NFA.nsprod(*As, sds=sync)
+    res.visu()
+    NFA.VISULANG = 10
+
 def main():
     exoEqualRegexp()
     even_odd()
@@ -686,3 +721,5 @@ def main():
 # transition_deterministic_minimisation()
 
 main()
+
+# process_language_v1()

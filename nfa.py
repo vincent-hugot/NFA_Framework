@@ -208,7 +208,7 @@ class NFA:
             return [s.map(lambda q: (k, q)) for k, s in enumerate(os)]
         return os
 
-
+    @preserve
     def concatenate(*os):
         """Concatenate automata / languages"""
         os = NFA.disjoint(os)
@@ -223,8 +223,6 @@ class NFA:
             res.add_rules( { (p,'',q) for p in A.F for q in B.I } )
         return res
 
-
-    @preserve
     def __add__(s,o):
         """
         Concatenate
@@ -1404,7 +1402,7 @@ class NFA:
 
     @staticmethod
     def spec(x,name="/Spec", Qtype=try_eval, Ttype=try_eval, style="classic",**kwargs):
-        """
+        """Get automaton from compact textual description / specification
         :param x: the spec
         :param Qtype: constructor for states, eg int; defaults, evaluates python if possible
         :param Ttype: constructor for transition symbols
@@ -1722,9 +1720,87 @@ class NFA:
         \end{questionmult}}
         """.replace('    ','').replace("<QNAME>", s.name).replace("<TABS>", "l"*(len(Q)+1)).replace("<TABLE>", t)
 
-
-
         print(template)
+
+    @staticmethod
+    def variable_on_range(name, r, init):
+        """return a NFA name for a variable on range r, with test = and assignment :=,
+        with initial value init"""
+        name = str(name)
+        return NFA({init}, (), [ (s, (name,"="+s), s) for s in r ] +
+                   [ (s, (name,":="+ss), ss) for (s,ss) in product(r,r) ],
+                   name=name)
+
+    def normalize_IF(s):
+        """return a NFA with exactly one initial and final states"""
+        new = fresh_gen(s.Q)
+        i, f = peek(new, new)
+        return NFA([i],[f],s.Δ | { (i,"",ii) for ii in s.I } | { (ff,"",f) for ff in s.F })
+
+    @staticmethod
+    def processes(spec):
+        """return automata and synchronisation set for pseudo code"""
+        from lark import Lark, Transformer, v_args
+        p = Lark(r"""%import common (WS, CNAME, SH_COMMENT)
+        %import common.SIGNED_INT -> INT
+        %ignore WS
+        %ignore SH_COMMENT
+        OP : /[:=+*\/-<>$%]+/
+        _join{s,x}: x (s x)* 
+        spec: def*   
+        def : "bool" CNAME ":=" boolval  -> bool
+            | "int" "[" INT "," INT "]" CNAME ":=" INT -> int
+            | "process" CNAME ":" bloc -> process
+        boolval : "True" -> true | "False" -> false
+        _value : INT | boolval
+        ?instr: "pass" ";" -> noop | atom ";" 
+            |  "if" cond bloc "else" bloc -> if | "if" cond bloc -> if 
+            | "while" cond bloc -> whiledo
+            | "wait" _join{"or", atom} ";" -> wait
+        atom: CNAME OP _value  
+        bloc : "{" instr* "}" | instr+
+        ?cond : CNAME "=" (boolval | INT) -> cequal | boolval 
+        """, start="spec", parser="earley", debug=True
+                 )
+        t = p.parse(spec)
+        @v_args(inline=True)
+        class trans(Transformer):
+            def bool(s, name, init):
+                return NFA.variable_on_range(name, ["True", "False"], str(init)).visu()
+            def int(s, a, b, name, init):
+                r = [str(x) for x in range(int(a), int(b)+1)]
+                return NFA.variable_on_range(name, r, str(init)).visu()
+            def false(s): return False
+            def true(s): return True
+            def process(s, name, bloc):
+                bloc.F=bloc.Q
+                bloc = bloc.visu().mini().renum().named(name)
+                bloc.F = set()
+                return bloc
+            def bloc(s, *instrs):
+                return reduce( NFA.concatenate, instrs )
+            def noop(s): return NFA.of_word([""])
+            def atom(s, var, op, val): return NFA.of_word([(str(var),op+str(val))])
+            def wait(s, *atoms):
+                return NFA.union(*atoms).normalize_IF()
+            def whiledo(s, c, b):
+                if c is True:
+                    i,f = peek(b.I, b.F)
+                    b.add_rule(f,"",i)
+                    return b
+                else: assert False
+            def spec(s, *auts):
+                sync = [ { A.name:(B,t), B:(B,t) } for A in auts for (B,t) in A.Σ if A.name != B ]
+                return auts, sync
+
+
+
+        # print(t)
+        # print(t.pretty())
+        u = trans().transform(t)
+        return u
+
+
 
 
     @staticmethod
