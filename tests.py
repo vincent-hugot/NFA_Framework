@@ -603,6 +603,13 @@ def nondet_vulgarise():
     A.run("bababa",used_states=False,labeljust="c")
     A.dfa(pdf=NFA.VISUPDF).visu()
 
+def a_in_nth_pos(n):
+    return NFA({0}, {n+1},
+               { (p,a,p+1) for p in range(n) for a in "ab" }
+               | { (n,"a",n+1) },
+               name=f"_*{n}a"
+               )
+
 
 @ann
 def transition_deterministic_minimisation():
@@ -616,7 +623,8 @@ def transition_deterministic_minimisation():
     4 b 4 c 4
     4 a 5
     ""","UniqueLastLetter").visu()
-
+    A.dfa().visu()
+    A.dfa(multi_init=True).visu()
     A.mini().visu() #.reverse().trim().visu().dfa().visu().reverse().visu()
     A.mini().trans_det_Moore().visu()
     A.mini().tdBrzozowski().visu()
@@ -637,9 +645,15 @@ def transition_deterministic_minimisation():
     9 a 5
     """, "NotMultipleOf15")
 
-    B.visu().mini().visu()
+    B.visu().mini().visu().tdBrzozowski().visu()
     B.trans_det_Moore().visu()
     B.tdBrzozowski().visu()
+    B.mini().renum().trim().reverse().dfa().reverse().visu()
+
+    C = NFA.union(*(a_in_nth_pos(i) for i in [0, 1, 2]))
+    C.visu()
+    C.mini().visu().tdBrzozowski().visu()
+    C.trans_det_Moore().visu()
 
     # example the first letter never appears again.
 

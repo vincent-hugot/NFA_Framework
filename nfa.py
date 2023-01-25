@@ -132,9 +132,8 @@ class NFA:
 
     def trans_1(s):
         """get dict p -> set of (a,q)"""
-        look = {}
-        for (p,a,q) in s.Δ:
-            look[p] = look.get(p,set()) | {(a,q)}
+        look = defaultdict(lambda: set())
+        for (p, a, q) in s.Δ: look[p].add((a, q))
         return look
 
     def trans_pq(s):
@@ -584,7 +583,7 @@ class NFA:
                    { (p,a,q)
                      for p,a in look if a != ''
                      for q in closs(look[p,a]) },name=s.nop('ε') )
-        if closures: res.rm_eps_closures = { q:clos(q) for q in res.Q }
+        if closures: res.rm_eps_closures = { q:clos(q) for q in s.Q }
         return res
 
 
@@ -912,7 +911,8 @@ class NFA:
         return s
 
     def tex(self, qloc="",bends="",defbend='',defavoidbend="bend left=10",
-            defloop='loop above',qmap=lambda x:x, params="",at=lambda x:None):
+            defloop='loop above',qmap=lambda x:x, params="",at=lambda x:None,
+            initdirs={}, noepsilon=False, f=lambda x:x):
         """
         :param defloop: default loop stype
         :param defavoidbend: default p <-> q avoidance bending
@@ -923,6 +923,9 @@ class NFA:
         :param params: global parameters of the picture
         :param at: node -> position. force absolute position through "at" keyword
         :param qmap: mapping for pretty-printing complex states; comes from renum in texvisu
+        :param initdirs: dict "state" -> above / below, etc for initial states
+        :param noepsilon: do not use \varepsilon for empty transitions
+        :param f: post-processing state label -> state label str
         :return: TikZ code
         """
         i = "    "
@@ -950,7 +953,7 @@ class NFA:
                     order += [p,q]
                     chain = chain[2:]
         elif len(s.Q) > 1: # default node locations: square
-            order = list(s.I) + list(s.Q - s.F - s.I) + list(s.F - s.I)
+            order = sort_states(s.I) + sort_states(s.Q - s.F - s.I) + sort_states(s.F - s.I)
             import math
             N = math.ceil(math.sqrt(len(order)))
             k = 0 ; o = iter(order)
@@ -968,11 +971,13 @@ class NFA:
 
         order = [e for k, e in enumerate(order) if e not in order[:k]]
 
-        for q in order + list(s.Q - set(order)):
+        initd = defaultdict(lambda:'') | initdirs
+
+        for q in order + sort_states(s.Q - set(order)):
             absl = f"at {p} " if (p := at(qmap(q))) else ""
             rell = loc.get(q,'')  if not p else "" # some tests depend on renum; should update to use qmap q if option
-            r += f"{i}\\node[state,{'initial,' if q in s.I else ''}{'accepting,' if q in s.F else ''}]" \
-                 f" ({q}) [{rell}] {absl}{{{qmap(q)}}};\n"
+            r += f"{i}\\node[state,{ f'initial {initd[q]},' if q in s.I else ''}{'accepting,' if q in s.F else ''}]" \
+                 f" ({q}) [{rell}] {absl}{{{f(qmap(q))}}};\n"
 
         cmds = {
             "<" : "bend left",
@@ -986,6 +991,8 @@ class NFA:
             "c" : "inner sep = 0", # close
             "la": "loop above",
             "lb": "loop below",
+            "lr": "loop right",
+            "ll": "loop left",
         }
         b = defaultdict(lambda : "")
         for li in bends.splitlines():
@@ -1003,9 +1010,9 @@ class NFA:
         r += f"  \\path [->]\n"
         tr = s.trans_pq()
         def streps(s):
-            if s == "": return "\\varepsilon"
+            if s == "" and not noepsilon : return "\\varepsilon"
             return str(s)
-        for (p,q),A in tr.items():
+        for (p,q),A in sort_states(tr.items()):
             r += f"{i}({p})  edge  [{defloop+',' if p==q else ''}" \
                  f"{b.get((p,q), defavoidbend if p!=q and (q,p) in tr else defbend)}]  " \
                  f"node {{{', '.join(sorted(map(streps,A)))}}} ({q})\n"
@@ -1476,7 +1483,8 @@ class NFA:
                comment="/"+str(h))
 
     def table(s,mode=print):
-        """latex transition table, printed as side effect"""
+        """latex transition table, printed as side effect
+        mode = function (def print) or "return" """
         # assert not s.I & s.F # not handled
         sy = sorted(s.Σ)
         Q = sort_states(s.Q)
@@ -1504,6 +1512,21 @@ class NFA:
         if mode == "return": return begin+end
         mode(begin+end)
         return s
+
+    def ts_table(s, lab={}):
+        template = r"""\begin{tabular}{>{\boldmath\ \ \ }r<{\ \ \ }c<{\ \ \ }c<{\ \ }}
+        $Q$ & $\lab$ &$\to$   \\\hline
+        <TAB>
+        \hline
+        \end{tabular}""".replace(" "*9,"")
+        Q = sort_states(s.Q)
+        # " & $1$ & $q$ & $1, 2, 6$\\"
+        def labels(q): return "$"+','.join(sorted(lab[q]))+"$" if lab[q] else ''
+        tr = s.trans_2()
+        def trans(q): return "$"+','.join(map(str,sorted(tr[(q,"")])))+"$" if tr[(q,"")] else ''
+        tab = "\\\\\n".join( f"${q}$ & {labels(q)} & {trans(q)} "  for q in Q ) + "\\\\"
+        return template.replace("<TAB>", tab)
+
 
     @property
     def size(s):
@@ -1697,30 +1720,59 @@ class NFA:
             assert False
         return res
 
-    def AMC(s, Qadd=()):
+    def AMC(s, Qadd=(), elem="general", stmt="Give the transition table for <AUTNAME>:",
+            qname="NFA__<AUTNAME>", stmti="Initials:", stmtf="Finals:"):
         t = ""; tr = s.trans_2()
         Q = sort_states(s.Q | set(Qadd))
         def c(b): return "\\"+ ("c" if b else "w") +"c{}\hspace*{-2em}"
-        for a in sorted(s.Σ):
-            t += f"$\\xto{{{a}}}$ & " + " & ".join(map(texesc,Q)) + "\\\\\n"
-            for p in Q:
-                t+= texesc(p) + " & " + " & ".join( c( (p,a,q) in s.Δ ) for q in Q) + "\\\\\n"
-            t+= "\\midrule\n"
+        # INIT FINA
+        def qsetstates(states, qid, stmt):
+            def c(b): return "\\" + ("c" if b else "w") + "c{"
+            t = " ".join(c(p in states) + texesc(f"${p}$") + "}" for p in Q)
+            templatei = r"""
+            \element{<ELEM>}{
+            \begin{questionmult}{<QNAME> <QID>}
+            \scoring{\scoringINITFIN}
+            \AMCnoCompleteMulti
+            <STMT>
+            \begin{choicescustom}[o] 
+            <TABLE>
+            \end{choicescustom}
+            \end{questionmult}}
+            """.replace('    ','').replace("<STMT>",stmt).replace("<QNAME>",qname)\
+            .replace("<AUTNAME>", s.name)\
+            .replace("<TABLE>", t).replace("<ELEM>", elem).replace("<QID>", qid)
+            return templatei
 
-        template = """
-        \element{general}{
-        \\begin{questionmult}{NFA__<QNAME>}
-        Give the transition table for <QNAME>:
-        \\begin{choicescustom}[o]
-        \\begin{center}
-        \\begin{tabular}{<TABS>}
+        # TABLE
+        for a in sorted(s.Σ):
+            legendh = " & ".join( texesc(f"${q}$") for q in Q ) + "\\\\\n"
+            t += f"$\\xto{{{a}}}$ & " + legendh
+            for p in Q:
+                t+= texesc(f"${p}$") + " & " + " & ".join( c( (p,a,q) in s.Δ ) for q in Q) \
+                    + "&" + texesc(f"${p}$") + "\\\\\n"
+            t+= "\\midrule\n"
+        t += "&" + legendh
+
+        template = r"""
+        \element{<ELEM>}{
+        \begin{questionmult}{<QNAME>}
+        \scoring{\scoringTABLE}
+        \AMCnoCompleteMulti
+        <STMT>
+        \begin{choicescustom}[o]
+        \begin{center}
+        \hspace*{-2em}
+        \begin{tabular}{<TABS>}
         <TABLE>\end{tabular}
         \end{center}
         \end{choicescustom}
         \end{questionmult}}
-        """.replace('    ','').replace("<QNAME>", s.name).replace("<TABS>", "l"*(len(Q)+1)).replace("<TABLE>", t)
+        """.replace('    ','').replace("<STMT>",stmt).replace("<QNAME>",qname)\
+            .replace("<AUTNAME>", s.name).replace("<TABS>", "l"*(len(Q)+2))\
+            .replace("<TABLE>", t).replace("<ELEM>", elem)
 
-        print(template)
+        return qsetstates(s.I, "inits", stmti) +  qsetstates(s.F, "finals", stmtf) + template
 
     @staticmethod
     def variable_on_range(name, r, init):

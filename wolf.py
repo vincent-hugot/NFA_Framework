@@ -58,7 +58,7 @@ def growfarmer(A):
 FWGC_Problem.growtofixpoint(growfarmer, record_steps=True)
 FWGC_Problem.F = {fset()}
 
-##FWGC_Problem.visusteps()#(rankdir="TB")
+# FWGC_Problem.visusteps()#(rankdir="TB")
 FWGC_Problem.map(f=lambda q: (
     ", ".join(q) + " \\n~~~~~~~\\n " + ", ".join(actors-q)
 )).visu(break_strings=False, pdfcrop=True)

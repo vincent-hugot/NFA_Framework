@@ -72,15 +72,30 @@ symbtex = {
         AX:"\\forall\\NEXT", AG:"\\forall\\GENE", EG:"\\exists\\GENE", AF:"\\forall\\FINA", EF:"\\exists\\FINA"
     }
 
+# def f_tex(f):
+#     if isatom(f): return symb[f] if type(f) is LogOps else  str(f)
+#     o,*r = f
+#     assert len(r) > 0
+#     if len(r) == 1: return f"{{{symbtex[o]} {f_tex(r[0])}}}"
+#     if len(so := symbtex[o]) == 2:
+#         g,h = r ; Q,O = so
+#         return f"{Q}{{{f_tex(g)} {O} {f_tex(h)}}}"
+#     return "{" + f" {symbtex[o]} ".join(map(f_tex,r)) + "}"
+
 def f_tex(f):
-    if isatom(f): return symb[f] if type(f) is LogOps else  str(f)
-    o,*r = f
-    assert len(r) > 0
-    if len(r) == 1: return f"{{{symbtex[o]} {f_tex(r[0])}}}"
-    if len(so := symbtex[o]) == 2:
-        g,h = r ; Q,O = so
-        return f"{Q}{{{f_tex(g)} {O} {f_tex(h)}}}"
-    return "{" + f" {symbtex[o]} ".join(map(f_tex,r)) + "}"
+    z = f_tex
+    match f:
+        case str(): return f
+        case LogOps(): return symbtex[f]
+        case LogOps() as o, g:
+            return f"{{{symbtex[o]} {z(g)}}}"
+        case LogOps() as o, g, h:
+            match [x for x in  symbtex[o].split("\\") if x]:
+                case o,: return f"\p{{{z(g)} \\{o} {z(h)}}}"
+                case q,o: return f"\\{q}\p{{{z(g)} \\{o} {z(h)}}}"
+                case _: assert False, _
+        case _:  assert False, _
+
 
 def subs(f):
     if isatom(f): return {f}
