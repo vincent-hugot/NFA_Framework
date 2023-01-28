@@ -49,6 +49,7 @@ class NFA:
     VISUNAME = True     # default visualisation of automaton's name
     VISU_INITIAL_ARROW = True   # True for initial arrow, else special style
     VISURANKDIR="LR"    # dot parameter rankdir for graph direction / TB
+    VISULAYOUT="dot"    # layout engine to use: dot, neato, [s]fdp, circo, twopi, osage
     VISUFACTORISE = True     # factorise multiple transitions
     VISUDOUBLEARROWS = False # use <-a-> for -a-> <-a- ?
     NOVISU = False      # globally deactivate visualisation; for profiling etc
@@ -1044,6 +1045,7 @@ class NFA:
              node_shape="circle",
              epsilon_style='label=ε color="#666666"',
              escape_name=True,
+             layout=None,
              ):
         """Thanks to dot, visualise the saggital diagram of the automaton.
         A pdf is generated and updated for each call, as well as a dot for the last call only
@@ -1149,13 +1151,15 @@ class NFA:
         dotc = """
             digraph AST {
             bgcolor="transparent";
+            layout="%s";
             //ranksep=0;
             //nodesep=1;
             rankdir=%s;
             //ratio=compress
             size="8,5"
             edge [arrowhead=vee fontname = "palatino" arrowsize=.7];
-            """ % (rankdir or NFA.VISURANKDIR)
+            """ % (layout or NFA.VISULAYOUT,
+                   rankdir or NFA.VISURANKDIR)
         comment = comment or ""
         name = NFA.VISUNAME if name is None else name
         if name and original.name:
@@ -1228,7 +1232,7 @@ class NFA:
     @staticmethod
     def visutext(txt,**kw):
         """create a pdf page with the given text"""
-        NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,**kw)
+        NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,layout="dot",**kw)
 
     def Brzozowski(s):
         "automaton minimisation, Brzozowski method"
@@ -1241,7 +1245,8 @@ class NFA:
         return min(A,B, key=lambda x:len(x.Q))
 
     # automaton minimisation
-    def mini(s,*a,**k):
+    def mini(s,*a,**k) -> "NFA":
+        "minimalisation algorithm"
         # r1 = s.Moore()
         # r2 = s.Moore2(*a, **k)
         # r3 = s.Brzozowski()

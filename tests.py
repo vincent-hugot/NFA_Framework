@@ -603,60 +603,6 @@ def nondet_vulgarise():
     A.run("bababa",used_states=False,labeljust="c")
     A.dfa(pdf=NFA.VISUPDF).visu()
 
-def a_in_nth_pos(n):
-    return NFA({0}, {n+1},
-               { (p,a,p+1) for p in range(n) for a in "ab" }
-               | { (n,"a",n+1) },
-               name=f"_*{n}a"
-               )
-
-
-@ann
-def transition_deterministic_minimisation():
-    A = NFA.spec("""
-    0 2 4
-    1 3 5
-    0 a 0 b 0
-    0 c 1
-    2 a 2 c 2
-    2 b 3
-    4 b 4 c 4
-    4 a 5
-    ""","UniqueLastLetter").visu()
-    A.dfa().visu()
-    A.dfa(multi_init=True).visu()
-    A.mini().visu() #.reverse().trim().visu().dfa().visu().reverse().visu()
-    A.mini().trans_det_Moore().visu()
-    A.mini().tdBrzozowski().visu()
-    A.trans_det_Moore().visu()
-    A.tdBrzozowski().visu()
-
-    B = NFA.spec("""
-    0 5
-    1 2 6 7 8 9
-    0 a 1
-    1 a 2
-    2 a 0
-
-    5 a 6
-    6 a 7
-    7 a 8
-    8 a 9
-    9 a 5
-    """, "NotMultipleOf15")
-
-    B.visu().mini().visu().tdBrzozowski().visu()
-    B.trans_det_Moore().visu()
-    B.tdBrzozowski().visu()
-    B.mini().renum().trim().reverse().dfa().reverse().visu()
-
-    C = NFA.union(*(a_in_nth_pos(i) for i in [0, 1, 2]))
-    C.visu()
-    C.mini().visu().tdBrzozowski().visu()
-    C.trans_det_Moore().visu()
-
-    # example the first letter never appears again.
-
 def _AMC():
     A = NFA.spec("""
     0
@@ -728,13 +674,12 @@ def main():
     verif_mini_prog()
     synchro_prod_poly_example()
     hard_minimisation()
-    transition_deterministic_minimisation()
     process_language_v1()
 
 # NFA.sanity_check()
 
-# transition_deterministic_minimisation()
+import transition_deterministic_minimisation
 
-main()
+# main()
 
 # process_language_v1()
