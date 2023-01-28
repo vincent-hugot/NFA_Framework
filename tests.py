@@ -678,8 +678,8 @@ def main():
 
 # NFA.sanity_check()
 
-import transition_deterministic_minimisation
+# import transition_deterministic_minimisation
 
-# main()
+main()
 
 # process_language_v1()
