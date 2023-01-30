@@ -80,19 +80,21 @@ def do_permut():
     P.add_rules(
         cycle("b", 0,2,4) | cycle("b", 6,1,3,5) | cycle("b", 7)
     )
+    assert P.is_det(True, ignore_inits=True)
 
     P.visu(layout="circo")
-    PD = P.dfa().visu()
 
+    PD = P.dfa().visu()
     targets = powerfset(P.Q, 4, 4)
     print(len(targets), "targets")
     print("missing:", targets - PD.Q)
+
     PD.mini().visu()
 
 
+# NFA.NOVISU = True
 
-
-do_unique_last()
-do_modulo()
-do_nth_pos()
+# do_unique_last()
+# do_modulo()
+# do_nth_pos()
 do_permut()

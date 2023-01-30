@@ -772,12 +772,13 @@ class NFA:
 
 
 
-    def is_det(s,show=False):
+    def is_det(s,show=False,ignore_inits=False):
         """ is it deterministic ?
-        :param show: display nondeterministic aspects of automaton"""
+        :param show: display nondeterministic aspects of automaton
+        :param ignore_inits: test only transitions"""
         def p(*x):
             if show: print(*x)
-        if len(s.I) > 1: p("Init",s.I); return False
+        if not ignore_inits and len(s.I) > 1: p("Init",s.I); return False
         for k,v in s.trans_2().items():
             if len(v) > 1: p(*k, "->",v); return False
         return True
