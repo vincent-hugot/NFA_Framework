@@ -121,6 +121,22 @@ def bf_permut(N=4):
     PD = P.dfa().visu()
     assert len(PD.Q) == 2**len(P.Q) - 1
 
+def adrien(N):
+    A = NFA(range(N), (), {
+        r for p in range(N-1) for r in [(p,x,(p+1)%N) for x in "ab"]
+    }, name=f"Adrien {N=}")
+    def no(a):
+        def q(n): return f"{a}{n}"
+        return (
+            [ (N-1, a, q(1)) ]
+            +  [ (q(i), symb, q((i+1)%N) ) for symb in A.Σ for i in range(1,N) ]
+            + [ (q(0), symb, q(1)+"!") for symb in A.Σ - {a} ]
+            + [(q(1)+"!", symb, q(2) ) for symb in A.Σ ]
+        )
+    for s in A.Σ: A.add_rules(no(s))
+    A.F = { s+"1!" for s in A.Σ }
+    A.visu()
+    A.dfa().visu().mini().visu()
 
 
 ############################
@@ -132,9 +148,11 @@ def bf_permut(N=4):
 # do_permut(8)
 # for N in range(4, 200, 2):
 #     assert not do_permut(N)
-bf_permut(3)
+# bf_permut(3)
 # for N in range(2,100):
 #     print(N); bf_permut(N)
+adrien(3)
+adrien(4)
 
 
 # Adrien example explosion:
