@@ -1,6 +1,7 @@
 from nfa import *
 
 NFA.VISULANG=0
+# NFA.NOVISU = True
 
 def a_in_nth_pos(n,a="a",al="ab"):
     return NFA({0}, {n},
@@ -65,36 +66,63 @@ def do_nth_pos():
 
 
 def permut(N):
+    "basic automaton with circular permuation for a"
     return NFA({n for n in range(N) if not n%2}, {0}, {
         (n, "a", n+1) for n in range(N-1)
     } | { (N-1, "a", 0) }, name=f"permut {N}")
 
 def cycle(a,*l):
+    "cycle to rules"
     l = l + (l[0],)
     return { (p,a,q) for p,q in zip(l,l[1:]) }
 
+def cycles(N):
+    "theoretical cycles"
+    even = [k for k in range(0, N-2, 2)]
+    odd = [N-2] + [ k for k in range(1, N-2, 2) ]
+    solo= [N-1]
+    r = even, odd, solo
+    assert sum(map(len,r)) == N
+    return r
 
-def do_permut():
+def do_permut(N=8):
     # NFA.VISULAYOUT="circo"
-    P = permut(8)
-    P.add_rules(
-        cycle("b", 0,2,4) | cycle("b", 6,1,3,5) | cycle("b", 7)
-    )
+    P = permut(N)
+    # P.add_rules(
+    #     cycle("b", 0,2,4) | cycle("b", 6,1,3,5) | cycle("b", 7)
+    # )
+    print(N, cycles(N))
+    for c in cycles(N): P.add_rules(cycle("b", *c))
     assert P.is_det(True, ignore_inits=True)
 
     P.visu(layout="circo")
 
     PD = P.dfa().visu()
-    targets = powerfset(P.Q, 4, 4)
+    targets = powerfset(P.Q, N//2, N//2)
     print(len(targets), "targets")
-    print("missing:", targets - PD.Q)
+    print("missing:", m := (targets - PD.Q), len(m) )
 
     PD.mini().visu()
+    return len(m)
 
 
-# NFA.NOVISU = True
+
+
+############################
+NFA.NOVISU = True
 
 # do_unique_last()
 # do_modulo()
 # do_nth_pos()
-do_permut()
+for N in range(4, 200, 2):
+    assert not do_permut(N)
+
+
+
+# Adrien example explosion:
+# Salut. Je sais que tu es en pleine prépa de slides donc considère ce message comme un changement d'idée OPTIONNEL ET NON URGENT orienté automates.
+#Pour un exemple le plus simple possible de l'explosion exponentielle des automates à entrées multiples, je trouve ceci:
+#l'ensemble des préfixes non n périodiques, c'est à dire les mots u tels qu'il existe k pour lequel la k et n+k ieme lettres sont différentes.
+#C'est facile de faire un DFA qui teste ça pour tout k congru à i modulo n et ça ne nécessite que 3n états.
+#C'est facile de combiner ces gadgets en un seul MEDA de taille 3n qui reconnaît notre langage.
+#Le DFA minimal pour ce langage doit garder en mémoire les n dernières lettres lues. C'est nécessairement exponentiel. 
