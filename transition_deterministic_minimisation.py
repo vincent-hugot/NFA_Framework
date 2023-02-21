@@ -106,17 +106,35 @@ def do_permut(N=8):
     return len(m)
 
 
+def bf_permut(N=4):
+    P = permut(N).named(f"Bonfante {N}")
+    P.I = P.Q
+    P.add_rules(
+        cycle("b", 0) | cycle("b", *range(1,N))
+        | { (0, "c", 0) }
+        | { ( q, "c", (q+1)%N ) for q in range(1,N) }
+    )
+    assert P.is_det(True, ignore_inits=True)
+
+    P.visu(layout="circo")
+
+    PD = P.dfa().visu()
+    assert len(PD.Q) == 2**len(P.Q) - 1
+
 
 
 ############################
-NFA.NOVISU = True
+# NFA.NOVISU = True
 
 # do_unique_last()
 # do_modulo()
 # do_nth_pos()
-for N in range(4, 200, 2):
-    assert not do_permut(N)
-
+# do_permut(8)
+# for N in range(4, 200, 2):
+#     assert not do_permut(N)
+bf_permut(3)
+# for N in range(2,100):
+#     print(N); bf_permut(N)
 
 
 # Adrien example explosion:
