@@ -18,10 +18,11 @@
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-
+from __future__ import annotations
 from toolkit import *
 from collections import defaultdict
 import html
+
 
 
 # TODO: meta decorator to choose what to preserve, using setattr
@@ -697,14 +698,20 @@ class NFA:
     def copy(s): return NFA(s.I, s.F, s.Δ, Q=s.Q, trimmed=s._trimmed, name=s.name)
 
     @preserve
-    def dfa(s,pdf=None, multi_init=False):
+    def dfa(s,pdf=None, multi_init=False, force_init=False) -> NFA:
         """return equivalent DFA; no epsilons need apply
-        if pdf is specified, generate step by step slides"""
+        :param pdf: if true, generate step by step slides; not compatible with advanced options
+        :param multi_init: if true, do not merge initial states before proceeding
+        :param force_init: set of fsets; force a specific merging of initial states
+        """
         if pdf: return s.dfa_pdf(pdf) # delegate visualisation
         if not all( a != "" for a in s.Σ ): s = s.rm_eps()
         if s.is_det(): return s.copy().setnop('d') # todo always set of states; for Brzozowski
         l = s.trans_2()
-        do, done, rlz  = { fset(s.I) } if not multi_init else { fset({i}) for i in s.I }, set(), set()
+        do, done, rlz  = (  { fset(s.I) } if not multi_init and not force_init else
+                            { fset({i}) for i in s.I } if not force_init else
+                            force_init
+                         , set(), set() )
         q_init = do.copy()
         while do:
             P = do.pop(); done.add(P)
@@ -718,7 +725,7 @@ class NFA:
                    rlz, name=s.nop('d' if not multi_init else 'mid'))
 
     @preserve
-    def dfa_pdf(s,pdf=None):
+    def dfa_pdf(s,pdf=None) -> NFA:
         s.visu(pdfname=pdf, test=False,print_extra="dfa_pdf: INIT: ")
         res = s.dfa()
         d= {k:"style=invis" for k in res.Q | res.Δ }
@@ -1239,7 +1246,7 @@ class NFA:
         "automaton minimisation, Brzozowski method"
         return s.trim().reverse().dfa().reverse().dfa().setnop("Br",s.name)
 
-    def tdBrzozowski(s):
+    def tdBrzozowski(s) -> "NFA":
         "transition-deterministic automaton minimisation, Brzozowski method"
         A = s.trim().reverse().dfa(multi_init=True).reverse().dfa().setnop("tdBr1",s.name)
         B = s.trim().reverse().dfa().reverse().dfa(multi_init=True).setnop("tdBr2",s.name)

@@ -45,10 +45,27 @@ def modulo(N, a="a", acc=lambda n,N: n%N, desc=" != 0"):
 
 def do_modulo():
     B = modulo(3) | modulo(5)
-
+    # NFA.NOVISU = True
     B.visu().mini().visu().tdBrzozowski().visu()
     B.tdBrzozowski().visu()
-    B.reverse().dfa().reverse().visu()
+
+    NFA.NOVISU = False
+    # C : NFA = B.reverse().dfa().reverse().renum().visu()
+    C = NFA.of_word("a"*14).named("Not multiple of 15")
+    C.I = C.Q - {0} ; C.F = {0}
+    C.add_rule(14, "a", 0)
+    C.visu()
+    PS = powerfset(C.I, 1,7)
+    print(len(PS))
+    A = min( (C.dfa(force_init={P, fset(C.I)-P}) for P in PS), key=lambda A:len(A.Q))
+    A.visu().mini().visu()
+
+
+
+
+
+
+
 
 def do_nth_pos():
     NFA.visutext("Brz works")
@@ -143,7 +160,7 @@ def adrien(N):
 # NFA.NOVISU = True
 
 # do_unique_last()
-# do_modulo()
+do_modulo()
 # do_nth_pos()
 # do_permut(8)
 # for N in range(4, 200, 2):
@@ -151,8 +168,8 @@ def adrien(N):
 # bf_permut(3)
 # for N in range(2,100):
 #     print(N); bf_permut(N)
-adrien(3)
-adrien(4)
+# adrien(3)
+# adrien(4)
 
 
 # Adrien example explosion:
