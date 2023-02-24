@@ -257,7 +257,7 @@ def powerset(iterable):
     return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
 
 def powerfset(s, minlen=0, maxlen=2**64):
-    """returns set of fset subsets of s"""
+    """returns set of fset subsets of s of cardinal in [[minlen, maxlen]]"""
     return set(
         chain.from_iterable( map(fset,combinations(s, r)) for r in range(minlen,min(len(s),maxlen)+1) )
         )

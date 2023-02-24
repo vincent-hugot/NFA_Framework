@@ -706,7 +706,7 @@ class NFA:
         """
         if pdf: return s.dfa_pdf(pdf) # delegate visualisation
         if not all( a != "" for a in s.Σ ): s = s.rm_eps()
-        if s.is_det(): return s.copy().setnop('d') # todo always set of states; for Brzozowski
+        if s.is_det(): return s.copy().setnop('d')
         l = s.trans_2()
         do, done, rlz  = (  { fset(s.I) } if not multi_init and not force_init else
                             { fset({i}) for i in s.I } if not force_init else
@@ -1253,7 +1253,7 @@ class NFA:
         return min(A,B, key=lambda x:len(x.Q))
 
     # automaton minimisation
-    def mini(s,*a,**k) -> "NFA":
+    def mini(s,*a,**k) -> NFA:
         "minimalisation algorithm"
         # r1 = s.Moore()
         # r2 = s.Moore2(*a, **k)
@@ -1262,9 +1262,9 @@ class NFA:
         # return r2
         return s.Moore(*a, **k)
 
-    def trans_det_Moore(s, *a, **k):
+    def trans_det_Moore(s, *a, **k) -> NFA:
         "Naive minimisation for multiinit transistion-deterministic automata"
-        assert all( len(v) <= 1 for _,v in s.trans_2().items() )
+        assert all( len(err := v) <= 1 for _,v in s.trans_2().items() ), err
         return s.trim().complete().Moore(*a, preprocess=False, **k).named(s.nop("tdM"))
 
 

@@ -44,21 +44,46 @@ def modulo(N, a="a", acc=lambda n,N: n%N, desc=" != 0"):
 
 
 def do_modulo():
-    B = modulo(3) | modulo(5)
+    B = modulo(K:= 2) | modulo(L := 3)
     # NFA.NOVISU = True
     B.visu().mini().visu().tdBrzozowski().visu()
     B.tdBrzozowski().visu()
-
+    C : NFA = B.reverse().dfa().reverse().visu()
     NFA.NOVISU = False
-    # C : NFA = B.reverse().dfa().reverse().renum().visu()
-    C = NFA.of_word("a"*14).named("Not multiple of 15")
+    NN = 6#K*L # works somewhat for 6 but not 15 !!!
+    C = NFA.of_word("a"*(NN-1)).named(f"Not multiple of {NN}")
     C.I = C.Q - {0} ; C.F = {0}
-    C.add_rule(14, "a", 0)
+    C.add_rule(NN-1, "a", 0)
     C.visu()
-    PS = powerfset(C.I, 1,7)
+    PS = powerfset(C.I, 1,NN//2)
     print(len(PS))
-    A = min( (C.dfa(force_init={P, fset(C.I)-P}) for P in PS), key=lambda A:len(A.Q))
-    A.visu().mini().visu()
+    # .trans_det_Moore()
+    NFA.visutext("search tdmini")
+    A = min( ( C.dfa(force_init={P, fset(C.I)-P}) for P in PS ),
+                key=lambda A:len(A.Q))
+    A.visu().trans_det_Moore().visu()
+    # 6 -> not plultiples of 2 | multiple of two but not of three (2, 4, 8)*
+
+def do_modulo_break():
+    nTwo = NFA.spec("""
+    0
+    1
+    0 a 1
+    1 a 0""", "-2").visu()
+    TwoNThree = NFA.spec("""
+    0
+    2 4
+    0 a 1
+    1 a 2
+    2 a 3
+    3 a 4 
+    4 a 5
+    5 a 0
+    ""","2 -3").visu()
+
+    U = nTwo | TwoNThree
+    U.dfa().visu()
+
 
 
 
@@ -77,8 +102,9 @@ def do_nth_pos():
 
     NFA.visutext("Brz doesn't work")
     D = a_in_nth_pos(2,"c", "abc") | a_in_nth_pos(2,"b", "abc") | a_in_nth_pos(3,"a", "abc")
-    D.visu().mini().visu()
-    D.trans_det_Moore().visu()
+    D.visu().tdBrzozowski().visu()
+    D.mini().visu()
+    D.trans_det_Moore().visu().reverse().trans_det_Moore().reverse().visu() # not always applicable
 
 
 
@@ -118,12 +144,13 @@ def do_permut(N=8):
     targets = powerfset(P.Q, N//2, N//2)
     print(len(targets), "targets")
     print("missing:", m := (targets - PD.Q), len(m) )
+    assert not m
 
     PD.mini().visu()
     return len(m)
 
 
-def bf_permut(N=4):
+def do_bonfante_permut(N=4):
     P = permut(N).named(f"Bonfante {N}")
     P.I = P.Q
     P.add_rules(
@@ -135,10 +162,16 @@ def bf_permut(N=4):
 
     P.visu(layout="circo")
 
-    PD = P.dfa().visu()
+    PD : NFA = P.dfa().visu()
     assert len(PD.Q) == 2**len(P.Q) - 1
+    # PD.trans_det_Moore().visu().tdBrzozowski().visu() # nothing works
 
-def adrien(N):
+
+def do_adrien(N):
+    # l'ensemble des préfixes non n périodiques, c'est à dire les mots u tels qu'il existe k pour lequel la k et n+k ieme lettres sont différentes.
+    # C'est facile de faire un DFA qui teste ça pour tout k congru à i modulo n et ça ne nécessite que 3n états.
+    # C'est facile de combiner ces gadgets en un seul MEDA de taille 3n qui reconnaît notre langage.
+    # Le DFA minimal pour ce langage doit garder en mémoire les n dernières lettres lues. C'est nécessairement exponentiel.
     A = NFA(range(N), (), {
         r for p in range(N-1) for r in [(p,x,(p+1)%N) for x in "ab"]
     }, name=f"Adrien {N=}")
@@ -153,29 +186,23 @@ def adrien(N):
     for s in A.Σ: A.add_rules(no(s))
     A.F = { s+"1!" for s in A.Σ }
     A.visu()
-    A.dfa().visu().mini().visu()
+    A.dfa().visu().mini().visu().tdBrzozowski().visu()
 
 
 ############################
 # NFA.NOVISU = True
 
-# do_unique_last()
+do_permut(8)
+do_bonfante_permut(3)
+do_unique_last()
+do_nth_pos()
+do_adrien(3)
 do_modulo()
-# do_nth_pos()
-# do_permut(8)
-# for N in range(4, 200, 2):
-#     assert not do_permut(N)
-# bf_permut(3)
+do_modulo_break()
+
 # for N in range(2,100):
 #     print(N); bf_permut(N)
-# adrien(3)
-# adrien(4)
+# for N in range(4, 200, 2):
+#     assert not do_permut(N)
 
 
-# Adrien example explosion:
-# Salut. Je sais que tu es en pleine prépa de slides donc considère ce message comme un changement d'idée OPTIONNEL ET NON URGENT orienté automates.
-#Pour un exemple le plus simple possible de l'explosion exponentielle des automates à entrées multiples, je trouve ceci:
-#l'ensemble des préfixes non n périodiques, c'est à dire les mots u tels qu'il existe k pour lequel la k et n+k ieme lettres sont différentes.
-#C'est facile de faire un DFA qui teste ça pour tout k congru à i modulo n et ça ne nécessite que 3n états.
-#C'est facile de combiner ces gadgets en un seul MEDA de taille 3n qui reconnaît notre langage.
-#Le DFA minimal pour ce langage doit garder en mémoire les n dernières lettres lues. C'est nécessairement exponentiel. 
