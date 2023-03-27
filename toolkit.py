@@ -251,10 +251,10 @@ class VecSet:
 # print(VS.vecofset({a,c,67}))
 
 
-def powerset(iterable):
+def powerset(iterable, minlen=0, maxlen=2**64):
     "powerset([1,2,3]) --> () (1,) (2,) (3,) (1,2) (1,3) (2,3) (1,2,3)"
     s = list(iterable)
-    return chain.from_iterable(combinations(s, r) for r in range(len(s)+1))
+    return chain.from_iterable(combinations(s, r) for r in range(minlen,min(len(s),maxlen)+1) )
 
 def powerfset(s, minlen=0, maxlen=2**64):
     """returns set of fset subsets of s of cardinal in [[minlen, maxlen]]"""

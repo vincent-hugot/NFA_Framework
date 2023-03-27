@@ -46,7 +46,7 @@ def modulo(N, a="a", acc=lambda n,N: n%N, desc=" != 0"):
 def do_modulo():
     B = modulo(K:= 2) | modulo(L := 3)
     # NFA.NOVISU = True
-    B.visu().mini().visu().tdBrzozowski().visu()
+    B.visu().mini().visu().tdBrzozowski().visu().tdBrzozowski().visu()
     B.tdBrzozowski().visu()
     C : NFA = B.reverse().dfa().reverse().visu()
     NFA.NOVISU = False
@@ -102,7 +102,7 @@ def do_nth_pos():
 
     NFA.visutext("Brz doesn't work")
     D = a_in_nth_pos(2,"c", "abc") | a_in_nth_pos(2,"b", "abc") | a_in_nth_pos(3,"a", "abc")
-    D.visu().tdBrzozowski().visu()
+    D.visu().tdBrzozowski().visu().tdBrzozowski().visu()
     D.mini().visu()
     D.trans_det_Moore().visu().reverse().trans_det_Moore().reverse().visu() # not always applicable
 
@@ -189,16 +189,79 @@ def do_adrien(N):
     A.dfa().visu().mini().visu().tdBrzozowski().visu()
 
 
+def enum_nfa(N, Σ):
+    Q = range(N); S = len(Σ)
+    num = (2**N - 1)**2 * 2**(S*N**2)
+    print(N, S, num)
+    return num, (
+        NFA(I, F, Δ)
+        for I in powerset(Q, 1)
+        for F in powerset(Q, 1)
+        for Δ in powerset(product(Q,Σ,Q))
+    )
+
+
+def enum_mida(N, Σ):
+    Q = range(N); S = len(Σ)
+    num = (2**N - 1)**2 * (N+1)**(S*N)
+    print(f"mida {N=} {S=} {num=}")
+    return num, (
+        NFA(I, F, Δ)
+        for Δl in powerset(product(Q,Σ))
+        for images in product(Q,repeat=len(Δl))
+        for Δ in [ [ (p,a,q) for ((p,a),q) in zip(Δl, images) ] ]
+        for I in powerset(Q, 1)
+        for F in powerset(Q, 1)
+    )
+
+
+def Adrien_normal_counterexample():
+    # NFA.NOVISU = 1
+    NFA.VISULANG = 10
+    A = NFA.spec("""
+    0 1 
+    1 2
+    0 # 0 a 1 b 2
+    1 b 2
+    2 a 1
+    """, "Adrien Counter 1").visu()
+    A.mini().visu()
+
+    B = A.copy().named("Adrien Counter 2"); B.I = {0,2}
+    B.visu().mini().visu()
+
+    assert A==B
+
+    # A= (NFA.of_word("a")| NFA.of_word("b")).visu()
+    # A = NFA.spec("0 1\n0\n0 a 1\n1 b 0").visu()
+    # A = NFA.universal("a").visu()
+    # A = NFA.spec("0\n1\n0 a 0 b 1\n1 b 1 b 0").visu() # NFA
+    num, Cs = enum_mida(2, A.Σ)
+
+    # NFA.NOVISU = 1
+    pos = 0
+    for k,C in enumerate(Cs, 1):
+        # if k < 0: continue # start at specific number
+        if not k % 10**3: print(f"{k:.2E}   {100*k/num:.1f}%    {k}\r", end="")
+        if C == A:
+            pos += 1
+            print(C.named(k).visu())
+            # break
+    print(k, "tested of", num, ", of which positives:", pos)
+
+
 ############################
 # NFA.NOVISU = True
 
-do_permut(8)
-do_bonfante_permut(3)
-do_unique_last()
-do_nth_pos()
-do_adrien(3)
-do_modulo()
-do_modulo_break()
+# do_permut(8)
+# do_bonfante_permut(3)
+# do_unique_last()
+# do_nth_pos()
+# do_adrien(3)
+# do_modulo()
+# do_modulo_break()
+Adrien_normal_counterexample()
+
 
 # for N in range(2,100):
 #     print(N); bf_permut(N)

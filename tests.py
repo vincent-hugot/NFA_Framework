@@ -678,7 +678,7 @@ def main():
 
 # NFA.sanity_check()
 
-import transition_deterministic_minimisation
+from transition_deterministic_minimisation import *
 
 # main()
 # ctl_tests()

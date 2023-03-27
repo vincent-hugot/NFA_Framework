@@ -618,8 +618,9 @@ class NFA:
     def coaccessibles(s):
         return s.reverse().accessibles()
 
-    # brutally remove all states not in S
+
     def only(s,S,trimmed=False):
+        """brutally remove all states not in S"""
         return NFA(s.I & S, s.F & S,
                    { (p,a,q) for p,a,q in s.Δ if {p,q} <= S},
                    Q=s.Q & S, trimmed=trimmed, name=s.nop('t' if trimmed else 'only') )
@@ -1325,7 +1326,7 @@ class NFA:
         if not s.Q: return s
         try: Q = sorted(s.Q)
         except TypeError : Q = (sort_states if data or table else list)(s.Q)
-        symbs = sorted(s.Σ)
+        symbs = sorted(s.Σ, key=str)
         cl = {} ## classes : { n : { symbol : { state: class }  } } symbol can be eps
         cl[0] = {}
         first = Q[0] in s.F # to ensure first class is always I
