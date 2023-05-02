@@ -33,7 +33,7 @@ def preserve(m):
     :param m:
     :return:
     """
-    def f(s,*p,**k):
+    def f(s,*p,**k) -> NFA:
         worder = s.worder
         _grow_step = s._grow_step
         res = m(s,*p,**k)
@@ -530,7 +530,7 @@ class NFA:
     def __or__(s,o): return NFA.union(s,o)
 
     def union(*os):
-        """Union of arguments"""
+        """Union of argument NFAs"""
         if not os: return NFA(set(), set(), set())
         os = NFA.disjoint(os)
         return NFA(
@@ -541,10 +541,20 @@ class NFA:
             trimmed=all(A._trimmed for A in os)
         )
 
+    def inter(*os):
+        """Intersection of argument NFAs"""
+        assert os
+        return reduce(NFA.__and__, os)
+
     @staticmethod
     def Union(it):
-        """Union of iterators"""
+        """Union of iterator of NFAs"""
         return NFA.union(*it)
+
+    @staticmethod
+    def Inter(it):
+        """Intersection of iterator of NFAs"""
+        return NFA.inter(*it)
 
     def __contains__(s,w):
         """language membership test"""
@@ -1668,6 +1678,10 @@ class NFA:
         """Python code for the NFA; only works well for basic states, due to str vs repr fuckery; see fset"""
         return f"NFA(I={repr(s.I)},\nF={repr(s.F)},\nΔ={repr(s.Δ)},\nname={repr(s.name)})"
 
+    def past(s,q):
+        """past of state q"""
+        return NFA(s.I,{q},s.Δ).trim().named(s.nop(f"⟧{q}⟧"))
+
     def future(s,q):
         """future of state q: residual automaton"""
         return NFA({q},s.F,s.Δ).trim().named(s.nop(f"⟦{q}⟦"))
@@ -1800,7 +1814,7 @@ class NFA:
     def normalize_IF(s):
         """return a NFA with exactly one initial and final states"""
         new = fresh_gen(s.Q)
-        i, f = peek(new, new)
+        i, f = peeks(new, new)
         return NFA([i],[f],s.Δ | { (i,"",ii) for ii in s.I } | { (ff,"",f) for ff in s.F })
 
     @staticmethod
@@ -1851,7 +1865,7 @@ class NFA:
                 return NFA.union(*atoms).normalize_IF()
             def whiledo(s, c, b):
                 if c is True:
-                    i,f = peek(b.I, b.F)
+                    i,f = peeks(b.I, b.F)
                     b.add_rule(f,"",i)
                     return b
                 else: assert False

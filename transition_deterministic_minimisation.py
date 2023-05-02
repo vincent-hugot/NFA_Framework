@@ -44,7 +44,7 @@ def modulo(N, a="a", acc=lambda n,N: n%N, desc=" != 0"):
 
 
 def do_modulo():
-    B = modulo(K:= 2) | modulo(L := 3)
+    B = modulo(K := 2) | modulo(L := 3)
     # NFA.NOVISU = True
     B.visu().mini().visu().tdBrzozowski().visu().tdBrzozowski().visu()
     B.tdBrzozowski().visu()
@@ -64,33 +64,41 @@ def do_modulo():
     A.visu().trans_det_Moore().visu()
     # 6 -> not plultiples of 2 | multiple of two but not of three (2, 4, 8)*
 
-def do_modulo_break():
-    nTwo = NFA.spec("""
-    0
-    1
-    0 a 1
-    1 a 0""", "-2").visu()
-    TwoNThree = NFA.spec("""
-    0
-    2 4
-    0 a 1
-    1 a 2
-    2 a 3
-    3 a 4 
-    4 a 5
-    5 a 0
-    ""","2 -3").visu()
 
+nTwo = NFA.spec("""
+_0
+_1
+_0 a _1
+_1 a _0""", "-2")
+nThree = NFA.spec("""
+0
+1 2
+0 a 1
+1 a 2
+2 a 0""", "-3")
+
+TwoNThree = NFA.spec("""
+0
+2 4
+0 a 1
+1 a 2
+2 a 3
+3 a 4 
+4 a 5
+5 a 0
+""","2 -3")
+
+def do_modulo_break():
     U = nTwo | TwoNThree
     U.dfa().visu()
 
-
-
-
-
-
-
-
+    for mut in powerset(U.Q, 2):
+        Um = U.copy().named(str(mut))
+        Um.F = U.F ^ set(mut)
+        if U == Um:
+            Ummin = Um.trans_det_Moore()
+            if len(Ummin.Q) <= 5:
+                Ummin.visu()
 
 def do_nth_pos():
     NFA.visutext("Brz works")
@@ -250,6 +258,66 @@ def Adrien_normal_counterexample():
     print(k, "tested of", num, ", of which positives:", pos)
 
 
+def time_prof(A:NFA):
+    """temporal (past/future) profile:
+    dicts q -> past , q -> future"""
+    return { q : A.past(q).mini() for q in A.Q }, { q : A.future(q).mini() for q in A.Q }
+
+def past_breaking(A,n=2):
+    """minDFA -> min MIDA if separable"""
+    A.visu()
+    init = peek(A.I)
+    past = A.past(init).mini().renum().named("past").visu()
+    def open(A, Fs) -> NFA: # set additional states to final
+        A = A.copy(); A.F |= Fs
+        return A.mini().named(Fs)
+    for basis in powerfset(past.Q-past.F, 1):
+        for part in map(list,partitions(basis, n)):
+            group = [ open(past,F) for F in part ]
+            if sum( B.size for B in group ) < past.size:
+                print(part)
+                NFA.Union(group).named(f"{A.name} : {part}").visu()
+
+
+
+def do_past_future_analysis():
+    A = (modulo(K := 2) | modulo(L := 3)).dfa().renum().named("A")#.visu()
+    # time_prof(A)
+    # NFA.NOVISU = 1
+    U = nTwo | nThree
+    UM = U.visu().dfa().visu() # is mini
+    p,f = time_prof(UM)
+    pp,ff = time_prof(U)
+    p.update(pp); f.update(ff)
+    for Q in UM.Q:
+        assert p[Q] == NFA.Inter(p[q] for q in Q)
+        assert f[Q] == NFA.Union(f[q] for q in Q)
+    # NFA.NOVISU = 0
+
+    past_breaking(A)
+
+def normal_partition(A,n):
+    assert A.iso(A.mini()) # is minimal
+
+    brnf = A.reverse().dfa().reverse().renum().visu()
+    def cut(Is) -> NFA:
+        A = brnf.copy(); A.I = Is
+        return A.mini().named(Is)
+
+    minA = min(( NFA.Union(map(cut,cover)).trans_det_Moore().named(f"{A.name} : {cover}")
+                 for cover in covers(brnf.I, n)
+                ), key=lambda X:len(X.Q) ).renum().visu()
+    return minA
+
+
+def do_normal_partition():
+    normal_partition( (modulo(K := 2) | modulo(L := 3)).dfa().renum().named("A").visu() , 2 )
+    normal_partition( uniquelast("abc",1).named("B").mini().visu() , 3 )
+    normal_partition( C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).mini().named("C").visu(), 3 )
+    normal_partition( C, 2 )
+
+
+
 ############################
 # NFA.NOVISU = True
 
@@ -260,8 +328,9 @@ def Adrien_normal_counterexample():
 # do_adrien(3)
 # do_modulo()
 # do_modulo_break()
-Adrien_normal_counterexample()
-
+# Adrien_normal_counterexample()
+# do_past_future_analysis()
+do_normal_partition()
 
 # for N in range(2,100):
 #     print(N); bf_permut(N)

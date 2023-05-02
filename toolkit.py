@@ -18,6 +18,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from itertools import *
+from more_itertools import set_partitions
 from functools import reduce
 import subprocess as sp
 import math
@@ -76,6 +77,15 @@ def fresh_gen(s=()):
     while True:
         if k not in s: yield k
         k+=1
+
+def base_case_gen(g,b):
+    """prefixes g with b if g is empty, without consuming g"""
+    try:
+        gi = iter(g)
+        i = next(gi)
+        return chain([i],gi)
+    except StopIteration:
+        return iter([b])
 
 if __debug__:
     __g = fresh_gen((1, 3, 5))
@@ -262,6 +272,17 @@ def powerfset(s, minlen=0, maxlen=2**64):
         chain.from_iterable( map(fset,combinations(s, r)) for r in range(minlen,min(len(s),maxlen)+1) )
         )
 
+def partitions(s,n=2):
+    yield from ( map(fset,part) for part in set_partitions(s,n) )
+
+def covers(s, n=2):
+    """overlapping partitions: gen of tuples of sets
+    EXTREMELY UNOPTIMISED"""
+    yield from ( v for v in product(powerfset(s), repeat=n) if fset.union(*v) == s )
+
+# print(list(covers(set("ab"))))
+# exit(0)
+
 def pairwise(iterable):
     """s -> (s0,s1), (s1,s2), (s2, s3), ..."""
     a, b = tee(iterable)
@@ -307,6 +328,16 @@ def cd(dir):
     try: yield
     finally: os.chdir(currdir)
 
+@contextmanager
+def elapsed(msg="ELAPSED:", v=True):
+    from timeit import default_timer
+    start = default_timer()
+    elapser = lambda: default_timer() - start
+    yield lambda: elapser()
+    end = default_timer()
+    elapser = lambda: end-start
+    if v: print(msg, end-start)
+
 def texesc(s):
     """tex string escape"""
     return "".join('\\'+a if a in ('{','}') else a for a in str(s))
@@ -322,7 +353,11 @@ def classes_of_equiv(elems, eq):
         ## TODO: opti for nmini: do not create new classes for non root elems
     return classes
 
-def peek(*ss):
+def peek(s):
+    """get an element out of a set; like pop() but non-destructive"""
+    return next(iter(s))
+
+def peeks(*ss):
     """get an element out of every set; like pop() but non-destructive"""
     return [ next(iter(s)) for s in ss ]
 
@@ -332,3 +367,31 @@ if __debug__:
     assert classes_of_equiv(l, lambda a,b: a%10  == b%10 ) == [[1, 11], [2, 12], [3], [10, 30]]
 
 
+class disjoint_sets:
+
+    def __init__(s):
+        s.parent = {}
+
+    def find(s,e):
+        p = s.parent.setdefault(e,e)
+        return e if p == e else s.find(p)
+
+    def union(s,e,f):
+        pe, pf = map(s.find, (e,f))
+        s.parent[pe] = pf
+
+    def classes(s):
+        d = {}
+        for e in s.parent:
+            fe = s.find(e)
+            d[fe] = d.get(fe,fset()) | {e}
+        return tuple(sorted(d.values(), key=len, reverse=1))
+
+
+# DS = disjoint_sets()
+# print(DS.parent, DS.classes())
+# DS.union("a", "b")
+# DS.union("b", "c")
+# DS.union("d", "e")
+# # DS.union("a", "d")
+# print(DS.parent, DS.classes())
