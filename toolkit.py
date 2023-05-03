@@ -276,12 +276,9 @@ def partitions(s,n=2):
     yield from ( map(fset,part) for part in set_partitions(s,n) )
 
 def covers(s, n=2):
-    """overlapping partitions: gen of tuples of sets
-    EXTREMELY UNOPTIMISED"""
-    yield from ( v for v in product(powerfset(s), repeat=n) if fset.union(*v) == s )
-
-# print(list(covers(set("ab"))))
-# exit(0)
+    """overlapping partitions: gen of tuples of sets"""
+    S = powerfset(s, 1, len(s) - 1)
+    yield from ( l for l in combinations(S,n) if fset.union(*l) == s )
 
 def pairwise(iterable):
     """s -> (s0,s1), (s1,s2), (s2, s3), ..."""

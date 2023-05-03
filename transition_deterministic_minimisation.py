@@ -314,7 +314,8 @@ def normal_partition(A0,n):
 
 
 def do_normal_partition():
-    NFA.NOVISU = 1
+    # NFA.NOVISU = 1
+    normal_partition(Adrien_non_unique_minimal, 3)
     normal_partition( Adrien_non_unique_minimal, 2 )
     normal_partition( (modulo(K := 2) | modulo(L := 3)).renum().named("A") , 2 )
     normal_partition( uniquelast("abc",1).named("B") , 3 )
