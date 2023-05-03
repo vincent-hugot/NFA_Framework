@@ -90,7 +90,7 @@ TwoNThree = NFA.spec("""
 
 def do_modulo_break():
     U = nTwo | TwoNThree
-    U.dfa().visu()
+    U.visu().dfa().visu()
 
     for mut in powerset(U.Q, 2):
         Um = U.copy().named(str(mut))
@@ -157,16 +157,19 @@ def do_permut(N=8):
     PD.mini().visu()
     return len(m)
 
-
-def do_bonfante_permut(N=4):
+def bonfante_permut(N=4):
     P = permut(N).named(f"Bonfante {N}")
     P.I = P.Q
     P.add_rules(
-        cycle("b", 0) | cycle("b", *range(1,N))
-        | { (0, "c", 0) }
-        | { ( q, "c", (q+1)%N ) for q in range(1,N) }
+        cycle("b", 0) | cycle("b", *range(1, N))
+        | {(0, "c", 0)}
+        | {(q, "c", (q + 1) % N) for q in range(1, N)}
     )
     assert P.is_det(True, ignore_inits=True)
+    return P
+
+def do_bonfante_permut(N=4):
+    P = bonfante_permut(N)
 
     P.visu(layout="circo")
 
@@ -315,7 +318,8 @@ def normal_partition(A0,n):
 
 def do_normal_partition():
     # NFA.NOVISU = 1
-    normal_partition(Adrien_non_unique_minimal, 3)
+    normal_partition( bonfante_permut(2) , 2 )
+    normal_partition( Adrien_non_unique_minimal, 3)
     normal_partition( Adrien_non_unique_minimal, 2 )
     normal_partition( (modulo(K := 2) | modulo(L := 3)).renum().named("A") , 2 )
     normal_partition( uniquelast("abc",1).named("B") , 3 )
