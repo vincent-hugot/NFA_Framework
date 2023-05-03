@@ -222,17 +222,18 @@ def enum_mida(N, Σ):
         for F in powerset(Q, 1)
     )
 
-
-def Adrien_normal_counterexample():
-    # NFA.NOVISU = 1
-    NFA.VISULANG = 10
-    A = NFA.spec("""
+Adrien_non_unique_minimal = NFA.spec("""
     0 1 
     1 2
     0 # 0 a 1 b 2
     1 b 2
     2 a 1
-    """, "Adrien Counter 1").visu()
+    """, "Adrien Counter 1")
+
+def Adrien_normal_counterexample():
+    # NFA.NOVISU = 1
+    NFA.VISULANG = 10
+    A = Adrien_non_unique_minimal.visu()
     A.mini().visu()
 
     B = A.copy().named("Adrien Counter 2"); B.I = {0,2}
@@ -296,24 +297,28 @@ def do_past_future_analysis():
 
     past_breaking(A)
 
-def normal_partition(A,n):
-    assert A.iso(A.mini()) # is minimal
-
+def normal_partition(A0,n):
+    A0.visu()
+    A = A0.mini().visu()
     brnf = A.reverse().dfa().reverse().renum().visu()
+
     def cut(Is) -> NFA:
         A = brnf.copy(); A.I = Is
         return A.mini().named(Is)
 
-    minA = min(( NFA.Union(map(cut,cover)).trans_det_Moore().named(f"{A.name} : {cover}")
+    minA = min(( NFA.Union(map(cut,cover)).trans_det_Moore().named(f"{A0.name} : {cover}")
                  for cover in covers(brnf.I, n)
                 ), key=lambda X:len(X.Q) ).renum().visu()
+    assert minA == A
     return minA
 
 
 def do_normal_partition():
-    normal_partition( (modulo(K := 2) | modulo(L := 3)).dfa().renum().named("A").visu() , 2 )
-    normal_partition( uniquelast("abc",1).named("B").mini().visu() , 3 )
-    normal_partition( C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).mini().named("C").visu(), 3 )
+    NFA.NOVISU = 1
+    normal_partition( Adrien_non_unique_minimal, 2 )
+    normal_partition( (modulo(K := 2) | modulo(L := 3)).renum().named("A") , 2 )
+    normal_partition( uniquelast("abc",1).named("B") , 3 )
+    normal_partition( C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 3 )
     normal_partition( C, 2 )
 
 
