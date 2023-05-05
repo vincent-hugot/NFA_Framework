@@ -310,9 +310,9 @@ def normal_partition(A0,n):
         A = brnf.copy(); A.I = Is
         return A.mini().named(Is)
 
-    minA = min(( NFA.Union(map(cut,cover)).trans_det_Moore().named(f"{A0.name} : {cover}")
-                 for cover in covers(brnf.I, n)
-                ), key=lambda X:len(X.Q) ).renum().visu()
+    mincov = min(covers(brnf.I, n), key=lambda cover: len(NFA.Union(map(cut, cover)).trans_det_Moore().Q))
+    minA = NFA.Union(map(cut, mincov)).visu().trans_det_Moore().visu().renum().visu()
+
     assert minA == A
     return minA
 
