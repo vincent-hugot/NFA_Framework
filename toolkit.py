@@ -305,7 +305,7 @@ class pdf_renderer:
 
     def print_status(s):
         while not s.concatenator.done():
-            print(erase_line+f"PDF: active jobs: {len(s.jobs)}", end="")
+            print(erase_line+f"PDF> jobs: {len(s.jobs)}", end="")
             sleep(.3)
         print(erase_line+"PDF: All done.")
         indicators = (s.jobs, s.concatenator.exception())

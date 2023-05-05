@@ -760,7 +760,7 @@ class NFA:
         res.visu(pdfname=pdf, test=False,print_extra="dfa_pdf: END: ")
         return res
 
-    def visusteps(s, dsteps=None,print_current=True,*p,**kw):
+    def visusteps(s, dsteps=None, print_current=False, *p, **kw):
         """Visualise several steps through progressive reveal.
         Same API as visu()
         :param dsteps: dict state/trans -> step index;
@@ -1069,6 +1069,7 @@ class NFA:
              epsilon_style='label=ε color="#666666"',
              escape_name=True,
              layout=None,
+             fontname="Linux Biolinum",
              ):
         """Thanks to dot, visualise the saggital diagram of the automaton.
         A pdf is generated and updated for each call, as well as a dot for the last call only
@@ -1076,6 +1077,7 @@ class NFA:
         as a single p a,b q arrow ?
         depends on external software: graphviz/dot and pdftk
 
+        :param fontname: rendering font
         :param nocomment: do not print name / comment
         :param size: should size be displayed in default comment ?
         :param test: should test() be called as well ?
@@ -1171,18 +1173,19 @@ class NFA:
             # thus dot's rendering ends up random and often very poor
             # invis drawback: <-> end up curved to avoid invisible edges
 
-        dotc = """
-            digraph AST {
+        dotc = f"""
+            digraph AST {{
             bgcolor="transparent";
-            layout="%s";
+            layout="{layout or NFA.VISULAYOUT}";
             //ranksep=0;
             //nodesep=1;
-            rankdir=%s;
+            rankdir={rankdir or NFA.VISURANKDIR};
             //ratio=compress
             size="8,5"
-            edge [arrowhead=vee fontname = "palatino" arrowsize=.7];
-            """ % (layout or NFA.VISULAYOUT,
-                   rankdir or NFA.VISURANKDIR)
+            fontname="{fontname}"
+            edge [fontname="{fontname}" arrowhead=vee arrowsize=.7];
+            node [fontname="{fontname}"];
+            """
         comment = comment or ""
         name = NFA.VISUNAME if name is None else name
         if name and original.name:
@@ -1229,7 +1232,7 @@ class NFA:
                 f.write('node [fillcolor="#FF8888" shape="point" width=.05 height=.05];\n')
                 f.writelines([f'"XINIT_{num[q]}"\n' for q in accsrt(s.I)]+['\n'])
 
-            f.write(f"""node [shape="{node_shape}" fontname = "palatino"
+            f.write(f"""node [shape="{node_shape}" 
                   style=filled fillcolor="#F5F5FF" margin=0 width=.3 height=.3];\n""")
             f.writelines([f'{num[q]} [ label="{lbltrans(q)}" {dmod.get(q,"")}]\n'
                           for q in accsrt(s.Q - s.F - (set() if initarrow else s.I))])

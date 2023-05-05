@@ -650,6 +650,21 @@ def process_language_v1():
     res.visu()
     NFA.VISULANG = 10
 
+@ann
+def fonts():
+    A = NFA.of_word("ab") @ NFA.of_word("_")
+    base = A.name
+    for font in [
+        "Linux Biolinum",
+        "Linux libertine",
+        "Liberation serif",
+        "Palatino",
+        "Bitstream Vera Serif",
+        "URW Bookman",
+        "Noto Serif",
+        ]:
+        A.named(base+" "+font).visu(fontname=font)
+
 def main():
     exoEqualRegexp()
     even_odd()
@@ -675,11 +690,11 @@ def main():
     synchro_prod_poly_example()
     hard_minimisation()
     process_language_v1()
+    fonts()
 
 # NFA.sanity_check()
 
 from transition_deterministic_minimisation import *
-
 # main()
 # ctl_tests()
 # process_language_v1()
