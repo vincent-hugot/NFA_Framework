@@ -21,7 +21,6 @@
 from __future__ import annotations
 
 import io
-
 from toolkit import *
 from collections import defaultdict
 import html
@@ -509,7 +508,7 @@ class NFA:
         """change complicated states to n, n+1,,..
         smart renumber: in order of accessibility
         if getiso get the dict isomorphism instead
-        if ghetboth get AUT, iso"""
+        if getboth get AUT, iso"""
         if not smart:
             f = dict(zip(s.Q,range(n,n+len(s.Q))))
         else:

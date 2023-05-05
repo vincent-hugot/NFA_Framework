@@ -177,25 +177,31 @@ def do_bonfante_permut(N=4):
     assert len(PD.Q) == 2**len(P.Q) - 1
     # PD.trans_det_Moore().visu().tdBrzozowski().visu() # nothing works
 
-
-def do_adrien(N):
+def adrien_periods(N):
     # l'ensemble des préfixes non n périodiques, c'est à dire les mots u tels qu'il existe k pour lequel la k et n+k ieme lettres sont différentes.
     # C'est facile de faire un DFA qui teste ça pour tout k congru à i modulo n et ça ne nécessite que 3n états.
     # C'est facile de combiner ces gadgets en un seul MEDA de taille 3n qui reconnaît notre langage.
     # Le DFA minimal pour ce langage doit garder en mémoire les n dernières lettres lues. C'est nécessairement exponentiel.
     A = NFA(range(N), (), {
-        r for p in range(N-1) for r in [(p,x,(p+1)%N) for x in "ab"]
+        r for p in range(N - 1) for r in [(p, x, (p + 1) % N) for x in "ab"]
     }, name=f"Adrien {N=}")
+
     def no(a):
         def q(n): return f"{a}{n}"
+
         return (
-            [ (N-1, a, q(1)) ]
-            +  [ (q(i), symb, q((i+1)%N) ) for symb in A.Σ for i in range(1,N) ]
-            + [ (q(0), symb, q(1)+"!") for symb in A.Σ - {a} ]
-            + [(q(1)+"!", symb, q(2) ) for symb in A.Σ ]
+                [(N - 1, a, q(1))]
+                + [(q(i), symb, q((i + 1) % N)) for symb in A.Σ for i in range(1, N)]
+                + [(q(0), symb, q(1) + "!") for symb in A.Σ - {a}]
+                + [(q(1) + "!", symb, q(2)) for symb in A.Σ]
         )
+
     for s in A.Σ: A.add_rules(no(s))
-    A.F = { s+"1!" for s in A.Σ }
+    A.F = {s + "1!" for s in A.Σ}
+    return A
+
+def do_adrien(N):
+    A = adrien_periods(N)
     A.visu()
     A.dfa().visu().mini().visu().tdBrzozowski().visu()
 
@@ -304,7 +310,7 @@ def normal_partition(A0,n):
     NFA.visutext(f"{A0.name}, {n}")
     A0.visu()
     A = A0.mini().visu()
-    brnf = A.reverse().dfa().reverse().renum().visu()
+    brnf = A.reverse().dfa().renum().reverse().visu()
 
     def cut(Is) -> NFA:
         A = brnf.copy(); A.I = Is
@@ -326,6 +332,7 @@ def do_normal_partition():
     normal_partition( Adrien_non_unique_minimal, 3)
     normal_partition( Adrien_non_unique_minimal, 2)
     normal_partition(bonfante_permut(2), 2)
+    normal_partition( adrien_periods(3), 3 )
 
 
 
