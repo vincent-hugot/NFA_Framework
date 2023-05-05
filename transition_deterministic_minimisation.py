@@ -301,6 +301,7 @@ def do_past_future_analysis():
     past_breaking(A)
 
 def normal_partition(A0,n):
+    NFA.visutext(f"{A0.name}, {n}")
     A0.visu()
     A = A0.mini().visu()
     brnf = A.reverse().dfa().reverse().renum().visu()
@@ -318,13 +319,14 @@ def normal_partition(A0,n):
 
 def do_normal_partition():
     # NFA.NOVISU = 1
-    normal_partition( bonfante_permut(2) , 2 )
-    normal_partition( Adrien_non_unique_minimal, 3)
-    normal_partition( Adrien_non_unique_minimal, 2 )
-    normal_partition( (modulo(K := 2) | modulo(L := 3)).renum().named("A") , 2 )
-    normal_partition( uniquelast("abc",1).named("B") , 3 )
+    normal_partition((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
+    normal_partition(uniquelast("abc", 1).named("B"), 3)
     normal_partition( C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 3 )
     normal_partition( C, 2 )
+    normal_partition( Adrien_non_unique_minimal, 3)
+    normal_partition( Adrien_non_unique_minimal, 2)
+    normal_partition(bonfante_permut(2), 2)
+
 
 
 

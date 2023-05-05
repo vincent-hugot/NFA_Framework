@@ -19,6 +19,9 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 from __future__ import annotations
+
+import io
+
 from toolkit import *
 from collections import defaultdict
 import html
@@ -48,6 +51,7 @@ class NFA:
     VISULANG = 10       # default visualisation: how many language elements; zero to deactivate
     VISUSIZE = True     # default visualisation of automaton's size
     VISUNAME = True     # default visualisation of automaton's name
+    VISUPREPEND = False # default to prepending visus (pdf in reverse order)
     VISU_INITIAL_ARROW = True   # True for initial arrow, else special style
     VISURANKDIR="LR"    # dot parameter rankdir for graph direction / TB
     VISULAYOUT="dot"    # layout engine to use: dot, neato, [s]fdp, circo, twopi, osage
@@ -904,11 +908,11 @@ class NFA:
         """is literally the exact same NFA"""
         return s.I == o.I and s.F == o.F and s.Δ == o.Δ and s.Σ == o.Σ
 
-    def texvisu(s,*texargs,pdfname=None,pdfprepend=False,texout="__NFA__.tex",
-                silent=True,print_current=True,renum=False,**texkwargs):
+    def texvisu(s,*texargs,pdfname=None,pdfprepend=None,texout="__NFA__.tex",
+                silent=True,print_current=False,renum=False,**texkwargs):
         """TeXperiment: visualise pdf of tex output; same arguments as tex
         :param renum: renum states and use mapping -- use if complicated states
-        :param print_current: as visu()
+        :param print_current: as visu() # deprecated
         :param texout: write tex figure to...
         :param silent: silence the output of LaTeX and pdfcrop processes
         :param pdfname: name of target visualisation pdf; as visu()
@@ -926,7 +930,8 @@ class NFA:
         texc = s.tex(*texargs,**texkwargs)
         with open(texout,'w') as f: f.write(texc)
         pdfname = NFA.VISUPDF if not pdfname else pdfname
-        do_tex(texc,pdfname,pdfprepend,silent)
+        pdf_renderer.do_tex(texc,pdfname, pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
+            silent=silent)
         if print_current: print(erase_line, end="")
         return s
 
@@ -1046,7 +1051,7 @@ class NFA:
              lbltrans=lambda x:x,
              dmod={},
              pdfname=None,
-             pdfprepend=False,
+             pdfprepend=None,
              pdfoverwrite=False,
              pdfcrop=False,
              comment="",
@@ -1059,7 +1064,7 @@ class NFA:
              size=None,
              doublearrows=None,
              break_strings=True,
-             print_current=True,
+             print_current=False, # deprecated after multithread
              print_extra="",
              node_shape="circle",
              epsilon_style='label=ε color="#666666"',
@@ -1214,7 +1219,7 @@ class NFA:
         pdfname = NFA.VISUPDF if not pdfname else pdfname
         initarrow = initarrow and NFA.VISU_INITIAL_ARROW
 
-        with open(pdfname+".dot", "w") as f:
+        with io.StringIO() as f:
             f.write(dotc)
             if not initarrow:
                 f.write('node [style=filled shape="cds",fillcolor="#FFF2F2",margin=.2];\n')
@@ -1239,9 +1244,12 @@ class NFA:
             f.writelines([f'"{num[p]}" -> "{num[q]}" [ {epsilon_style} {dmod.get((p,a,q),"")} ]\n'
                           for p,a,q in sΔ if not a])
             f.write('}')
+            dot_contents = f.getvalue()
 
         is_small = original.size < NFA.LARGE
-        do_dot(pdfname, pdfprepend=pdfprepend, pdfoverwrite=pdfoverwrite, pdfcrop=pdfcrop,
+        pdf_renderer.do_dot(dot_contents, pdfname,
+                            pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
+                            pdfoverwrite=pdfoverwrite, pdfcrop=pdfcrop,
                renderer="dot" if is_small else NFA.LARGE_RENDERER,
                renderer_options= [] if is_small else NFA.LARGE_RENDERER_OPTIONS )
         if print_current: print(erase_line, end="")
@@ -1840,7 +1848,7 @@ class NFA:
         atom: CNAME OP _value  
         bloc : "{" instr* "}" | instr+
         ?cond : CNAME "=" (boolval | INT) -> cequal | boolval 
-        """, start="spec", parser="earley", debug=True
+        """, start="spec", parser="earley", debug=0
                  )
         t = p.parse(spec)
         @v_args(inline=True)

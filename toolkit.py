@@ -16,7 +16,7 @@
 # COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
 # IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-
+import random
 from itertools import *
 from more_itertools import set_partitions
 from functools import reduce
@@ -29,6 +29,10 @@ from shutil import copy
 from collections import defaultdict
 import random as rand
 from contextlib import contextmanager
+from pathlib import Path
+from concurrent.futures import ThreadPoolExecutor
+from time import sleep
+from threading import Lock
 
 term_reset= "\u001b[0m"
 term_visu_style= "\u001b[1m\u001b[31m"
@@ -126,7 +130,7 @@ class fset(frozenset): # less ugly writing in subset constructions
 
 assert str(fset({1,2,3})) == '{1, 2, 3}'
 
-def do_dot(pdfname,pdfprepend=False, pdfoverwrite=False, store=None, renderer="dot", renderer_options = [],
+def __DEPRECATED_do_dot(pdfname,pdfprepend=False, pdfoverwrite=False, store=None, renderer="dot", renderer_options = [],
            pdfcrop=False):
     assert sh.which("pdftk")
     assert sh.which(renderer)
@@ -156,7 +160,7 @@ def do_dot(pdfname,pdfprepend=False, pdfoverwrite=False, store=None, renderer="d
         if os.path.isfile(f): os.remove(f)
     # maybe spool temp files in memory: https://docs.python.org/3.6/library/tempfile.html
 
-def do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
+def __DEPRECATED_do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
     if not sh.which("pdflatex"):
         print("\ndo_tex: pdflatex is not installed: aborting")
         return
@@ -190,6 +194,125 @@ def do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
             sh.move(name + "_fig.pdf", name + ".pdf")
             sp.run(["touch", name + ".pdf"])
 
+
+
+class pdf_renderer:
+    """
+    Parallel processing pipeline for pdf rendering
+    """
+    def __init__(s):
+        assert sh.which("pdftk")
+        s.pool = ThreadPoolExecutor()
+        s.temp_dir = tempfile.mkdtemp(prefix="NFA__Framework__")
+        s.jobs = {} ; s.jobsLock = Lock()
+        s.jgen = fresh_gen()
+        s.concatenator = None
+        s.concatenator_parameters = None
+        s.accumulator = f"{s.temp_dir}/accumulator.pdf"
+
+    def dot_name(s, jn): return f"{s.temp_dir}/{jn}.dot"
+    def pdf_name(s, jn): return f"{s.temp_dir}/{jn}.pdf"
+
+    def do_dot(s, dot_contents, pdfname, **kw):
+        pdfname = pdfname+".pdf"
+        assert sh.which(kw["renderer"])
+        jn = next(s.jgen)
+        with open(s.dot_name(jn),"w") as f: f.write(dot_contents)
+        s.check_concatenator_change(pdfname, **kw)
+        with s.jobsLock: s.jobs[jn] = s.pool.submit(s.dot_compiler, jn, pdfname, **kw)
+        s.wake_concatenator(pdfname, **kw)
+
+    def do_tex(s, tex, pdfname, **kw):
+        assert sh.which("pdflatex"), "pdflatex is not installed: aborting TeX content (normal for students)"
+        pdfname = pdfname + ".pdf"
+        jn = next(s.jgen)
+        td = Path(s.temp_dir) / f"do_tex__{jn}"
+        td.mkdir(exist_ok=1)
+        with open(texfile := td/"x.tex", 'w') as f:
+            f.write("\documentclass{minimal}\n" +
+                    "\\usepackage{tikz}\n\\usetikzlibrary{backgrounds,arrows,automata,shadows,matrix,decorations,shapes,calc,positioning}" +
+                    "\n\\tikzset{every state/.append style={minimum size=1.5em,\n  circular glow={fill=gray!30},fill=blue!2!white\n}}" +
+                    "\n\\tikzset{accepting/.append style={fill=green!2,circular glow={fill=gray!30}}}\n\\tikzset{fsa/.style={baseline=-.5ex,semithick,>=stealth'," +
+                    "\n  shorten >=1pt,auto,node distance=3.5em,initial text=}}\n\\tikzset{fst/.style={fsa,node distance=5em}}" +
+                    "\n\\tikzset{mathnodes/.style={execute at begin node=\\(,execute at end node=\\)}}" +
+                    "\n\\begin{document}\n" + tex + "\n\end{document}")
+        s.check_concatenator_change(pdfname, **kw)
+        with s.jobsLock: s.jobs[jn] = s.pool.submit(s.tex_compiler, jn, texfile, pdfname, **kw)
+        s.wake_concatenator(pdfname, **kw)
+
+    def tex_compiler(s,jn,texfile, pdfname, silent, **kw):
+        r = sp.run(["pdflatex", "-halt-on-error", texfile], cwd=Path(texfile).parent, capture_output=silent)
+        assert not r.returncode, r
+        if sh.which("pdfcrop"):
+            r = sp.run(["pdfcrop", f := Path(texfile).with_suffix(".pdf"), s.pdf_name(jn)], capture_output=True)
+            f.unlink()
+            assert not r.returncode, r
+        else: sh.move(Path(texfile).with_suffix(".pdf"), s.pdf_name(jn))
+
+    def check_concatenator_change(s, pdfname, **kw):
+        """If there are parameter changes that alter the behaviour of the concatenator, we can't just rely on
+        the existing concatenator process; we must wait for it to finish so that a new one is awoken"""
+        if not s.concatenator_parameters: return
+        new_params = kw | {"pdfname": pdfname}
+        if any(s.concatenator_parameters[p] != new_params[p] for p in
+            ["pdfname", "pdfprepend"]):
+            s.flush_concatenator()
+
+    def wake_concatenator(s, pdfname, **kw):
+        if s.concatenator is None or s.concatenator.done():
+            s.concatenator = s.pool.submit(s.pdf_concatenator, pdfname, **kw)
+            s.concatenator_parameters = kw | {"pdfname": pdfname}
+
+    def flush_concatenator(s):
+        while not s.concatenator.done(): pass # why do I need that? Doesn't result() wait upon process?
+        return s.concatenator.result()
+
+    def dot_compiler(s,jn, pdfname, renderer="dot", renderer_options = [], pdfcrop=False, **kw):
+        cmd = [renderer] + renderer_options + ["-Tpdf", s.dot_name(jn), "-o", s.pdf_name(jn)]
+        r = sp.run(cmd, capture_output=True)
+        if renderer == "dot" and r.returncode == -6 and r.stderr==b'corrupted size vs. prev_size\n':
+            print("corrupted size vs. prev_size random bug in dot, run again, https://gitlab.com/graphviz/graphviz/-/issues/2395")
+            r = sp.run(cmd, capture_output=True)
+        assert not r.returncode if renderer == "dot" else True, r
+        if pdfcrop and sh.which("pdfcrop"):
+            r = sp.run(["pdfcrop", s.pdf_name(jn), s.pdf_name(jn)+"_"], capture_output=True)
+            Path(s.pdf_name(jn)+"_").rename(s.pdf_name(jn))
+            assert not r.returncode, r
+
+    def pdf_concatenator(s, pdfname, pdfprepend, **kw):
+        target = Path(pdfname)
+        while s.jobs:
+            done = []
+            for jn, f in s.jobs.items():
+                if f.done(): done.append(jn)
+                else:        break
+            if done:
+                for jn in done:
+                    if (ex := s.jobs[jn].exception()) is not None:
+                        print("Exception on job", jn, "\n", repr(ex))
+                        s.pool.shutdown()
+                        raise ex
+                targets = [s.pdf_name(j) for j in done]
+                if target.is_file():
+                    sh.move(target, s.accumulator)
+                    targets = [s.accumulator] + targets
+                if pdfprepend: targets.reverse()
+                sp.run(["pdftk", *targets , "cat", "output", pdfname])
+                for t in targets: Path(t).unlink(missing_ok=1)
+                with s.jobsLock:
+                    for jn in done: del s.jobs[jn]
+            sleep(0.3)
+
+    def print_status(s):
+        while not s.concatenator.done():
+            print(erase_line+f"PDF: active jobs: {len(s.jobs)}", end="")
+            sleep(.3)
+        print(erase_line+"PDF: All done.")
+        indicators = (s.jobs, s.concatenator.exception())
+        assert indicators == ({}, None), indicators
+
+
+pdf_renderer = pdf_renderer()
 
 def flattupleL(t):
     """Flatten left-assoc single depth tuple"""

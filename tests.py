@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from nfa import NFA
-from toolkit import powerfset
+from toolkit import powerfset, pdf_renderer
 
 #####################################
 NFA.clear()
@@ -644,7 +644,7 @@ def process_language_v1():
         }
     """)
 
-    print(sync)
+    # print(sync)
     for A in As: A.visu()
     res = NFA.nsprod(*As, sds=sync)
     res.visu()
@@ -683,3 +683,6 @@ from transition_deterministic_minimisation import *
 # main()
 # ctl_tests()
 # process_language_v1()
+
+
+pdf_renderer.print_status()
