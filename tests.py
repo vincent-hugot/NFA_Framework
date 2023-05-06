@@ -720,8 +720,8 @@ def main():
 
 # NFA.sanity_check()
 # fonts()
-from transition_deterministic_minimisation import *
-# main()
+# from transition_deterministic_minimisation import *
+main()
 # ctl_tests()
 # process_language_v1()
 

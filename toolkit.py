@@ -224,7 +224,9 @@ class pdf_renderer:
         s.wake_concatenator(pdfname, **kw)
 
     def do_tex(s, tex, pdfname, **kw):
-        assert sh.which("pdflatex"), "pdflatex is not installed: aborting TeX content (normal for students)"
+        if not sh.which("pdflatex"):
+            print("pdflatex is not installed: aborting LaTeX content (normal for students)")
+            return
         pdfname = pdfname + ".pdf"
         jn = next(s.jgen)
         td = Path(s.temp_dir) / f"do_tex__{jn}"
