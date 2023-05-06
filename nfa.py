@@ -50,6 +50,7 @@ class NFA:
     VISULANG = 10       # default visualisation: how many language elements; zero to deactivate
     VISUSIZE = True     # default visualisation of automaton's size
     VISUNAME = True     # default visualisation of automaton's name
+    VISUFONT = "Libertinus Sans, Linux Biolinum, Times New Roman, Liberation serif" # defaut fontname
     VISUPREPEND = False # default to prepending visus (pdf in reverse order)
     VISU_INITIAL_ARROW = True   # True for initial arrow, else special style
     VISURANKDIR="LR"    # dot parameter rankdir for graph direction / TB
@@ -1069,7 +1070,7 @@ class NFA:
              epsilon_style='label=ε color="#666666"',
              escape_name=True,
              layout=None,
-             fontname="Linux Biolinum",
+             fontname=None,
              ):
         """Thanks to dot, visualise the saggital diagram of the automaton.
         A pdf is generated and updated for each call, as well as a dot for the last call only
@@ -1173,6 +1174,7 @@ class NFA:
             # thus dot's rendering ends up random and often very poor
             # invis drawback: <-> end up curved to avoid invisible edges
 
+        fontname = fontname or NFA.VISUFONT
         dotc = f"""
             digraph AST {{
             bgcolor="transparent";

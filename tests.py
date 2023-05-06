@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import toolkit
 from nfa import NFA
 from toolkit import powerfset, pdf_renderer
 
@@ -651,18 +652,28 @@ def process_language_v1():
     NFA.VISULANG = 10
 
 @ann
-def fonts():
+def fonts(solve=1):
     A = NFA.of_word("ab") @ NFA.of_word("_")
     base = A.name
-    for font in [
+    for font in [ # fc-match <name>
+        NFA.VISUFONT,
         "Linux Biolinum",
-        "Linux libertine",
-        "Liberation serif",
+        "Libertinus Sans",
+        "Libertinus",
+        "Libertinus, Linux libertine",
+        "Times", # -> Nimbus Roman
+        "DejaVu Math TeX Gyre",
+        "Times New Roman, Liberation serif",
         "Palatino",
         "Bitstream Vera Serif",
         "URW Bookman",
         "Noto Serif",
+        "Helvetica", # -> Nimbus Sans
+        "Liberation Sans, Arial",
+        "Noto Sans",
         ]:
+        if solve and toolkit.sh.which("fc-match"): print(font, "->",
+          toolkit.sp.run(["fc-match", font], capture_output=1).stdout.decode().strip())
         A.named(base+" "+font).visu(fontname=font)
 
 def main():
@@ -693,7 +704,7 @@ def main():
     fonts()
 
 # NFA.sanity_check()
-
+# fonts()
 from transition_deterministic_minimisation import *
 # main()
 # ctl_tests()
