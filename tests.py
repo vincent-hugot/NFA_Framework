@@ -664,7 +664,7 @@ def fonts(solve=1):
         "Libertinus, Linux libertine",
         "Times", # -> Nimbus Roman
         "DejaVu Math TeX Gyre",
-        "Times New Roman, Liberation serif",
+        "Times New Roman",
         "Palatino",
         "Bitstream Vera Serif",
         "URW Bookman",
@@ -722,8 +722,8 @@ def main():
 # NFA.sanity_check()
 # fonts()
 # from transition_deterministic_minimisation import *
-# main()
-fonts()
+main()
+# fonts()
 # ctl_tests()
 # process_language_v1()
 

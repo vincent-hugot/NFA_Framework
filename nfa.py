@@ -50,7 +50,7 @@ class NFA:
     VISULANG = 10       # default visualisation: how many language elements; zero to deactivate
     VISUSIZE = True     # default visualisation of automaton's size
     VISUNAME = True     # default visualisation of automaton's name
-    VISUFONT = "Libertinus Sans, Linux Biolinum, Times New Roman, Liberation serif" # defaut fontname
+    VISUFONT = "Libertinus Sans, Linux Biolinum, Libertinus Math, Times New Roman" # defaut fontname
     VISUPREPEND = False # default to prepending visus (pdf in reverse order)
     VISUCROP = False    # defaut dot/pdf visualisation: crop figure?
     VISU_INITIAL_ARROW = True   # True for initial arrow, else special style

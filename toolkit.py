@@ -218,7 +218,7 @@ class pdf_renderer:
         pdfname = pdfname+".pdf"
         assert sh.which(ren := kw["renderer"]), f"{ren} is not installed!"
         jn = next(s.jgen)
-        with open(s.dot_name(jn),"w") as f: f.write(dot_contents)
+        with open(s.dot_name(jn),"w", encoding="utf-8") as f: f.write(dot_contents)
         s.check_concatenator_change(pdfname, **kw)
         with s.jobsLock: s.jobs[jn] = s.pool.submit(s.dot_compiler, jn, pdfname, **kw)
         s.wake_concatenator(pdfname, **kw)
