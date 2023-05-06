@@ -216,7 +216,7 @@ class pdf_renderer:
 
     def do_dot(s, dot_contents, pdfname, **kw):
         pdfname = pdfname+".pdf"
-        assert sh.which(kw["renderer"])
+        assert sh.which(ren := kw["renderer"]), f"{ren} is not installed!"
         jn = next(s.jgen)
         with open(s.dot_name(jn),"w") as f: f.write(dot_contents)
         s.check_concatenator_change(pdfname, **kw)

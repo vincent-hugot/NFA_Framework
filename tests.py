@@ -659,6 +659,7 @@ def fonts(solve=1):
         NFA.VISUFONT,
         "Linux Biolinum",
         "Libertinus Sans",
+        "Libertinus Math",
         "Libertinus",
         "Libertinus, Linux libertine",
         "Times", # -> Nimbus Roman
@@ -721,7 +722,8 @@ def main():
 # NFA.sanity_check()
 # fonts()
 # from transition_deterministic_minimisation import *
-main()
+# main()
+fonts()
 # ctl_tests()
 # process_language_v1()
 
