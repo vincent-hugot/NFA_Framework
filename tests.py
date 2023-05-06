@@ -676,6 +676,20 @@ def fonts(solve=1):
           toolkit.sp.run(["fc-match", font], capture_output=1).stdout.decode().strip())
         A.named(base+" "+font).visu(fontname=font)
 
+@ann
+def concat_changes_test():
+    "edge cases for multiprocess renderer"
+    NFA.clear()
+    other = "test_other"; toolkit.os.unlink(other+".pdf")
+    for target in NFA.VISUPDF, other:
+        for prepend in 0,1:
+            for i in range(3):
+                NFA.visutext(f"{target} {prepend=} n°{i}", pdfname=target, pdfprepend=prepend)
+
+
+
+
+
 def main():
     exoEqualRegexp()
     even_odd()
@@ -702,6 +716,7 @@ def main():
     hard_minimisation()
     process_language_v1()
     fonts()
+    # concat_changes_test()
 
 # NFA.sanity_check()
 # fonts()

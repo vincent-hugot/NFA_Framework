@@ -198,7 +198,8 @@ def __DEPRECATED_do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.
 
 class pdf_renderer:
     """
-    Parallel processing pipeline for pdf rendering
+    Parallel processing pipeline for pdf rendering.
+    Use do_dot and do_tex to submit render jobs.
     """
     def __init__(s):
         assert sh.which("pdftk")
@@ -206,8 +207,8 @@ class pdf_renderer:
         s.temp_dir = tempfile.mkdtemp(prefix="NFA__Framework__")
         s.jobs = {} ; s.jobsLock = Lock()
         s.jgen = fresh_gen()
-        s.concatenator = None
-        s.concatenator_parameters = None
+        s.concatenator = None               # concatenator process
+        s.concatenator_parameters = None    # concat last woken with...
         s.accumulator = f"{s.temp_dir}/accumulator.pdf"
 
     def dot_name(s, jn): return f"{s.temp_dir}/{jn}.dot"
@@ -251,7 +252,8 @@ class pdf_renderer:
 
     def check_concatenator_change(s, pdfname, **kw):
         """If there are parameter changes that alter the behaviour of the concatenator, we can't just rely on
-        the existing concatenator process; we must wait for it to finish so that a new one is awoken"""
+        the existing concatenator process; we must wait for it to finish so that a new one is awoken
+        with the new parameters"""
         if not s.concatenator_parameters: return
         new_params = kw | {"pdfname": pdfname}
         if any(s.concatenator_parameters[p] != new_params[p] for p in
@@ -264,7 +266,7 @@ class pdf_renderer:
             s.concatenator_parameters = kw | {"pdfname": pdfname}
 
     def flush_concatenator(s):
-        while not s.concatenator.done(): pass # why do I need that? Doesn't result() wait upon process?
+        while not s.concatenator.done(): sleep(.1) # why do I need that? Doesn't result() wait upon process?
         return s.concatenator.result()
 
     def dot_compiler(s,jn, pdfname, renderer="dot", renderer_options = [], pdfcrop=False, **kw):
@@ -304,13 +306,20 @@ class pdf_renderer:
             sleep(0.3)
 
     def print_status(s):
+        """
+        Dispay indicator of how many pdf jobs remain.
+        At the end, if there have been problems, vomit relevant info.
+        Blocking call until all is rendered.
+        """
+        rot = rotating_timer_gen()
         while not s.concatenator.done():
-            print(erase_line+f"PDF> jobs: {len(s.jobs)}", end="")
+            print(erase_line+f"PDF> {next(rot)} jobs: {len(s.jobs)}", end="")
             sleep(.3)
-        print(erase_line+"PDF: All done.")
+        print(erase_line+"PDF> All done.")
         indicators = (s.jobs, s.concatenator.exception())
         assert indicators == ({}, None), indicators
 
+def rotating_timer_gen(): yield from cycle("-\|/")
 
 pdf_renderer = pdf_renderer()
 

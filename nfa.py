@@ -52,6 +52,7 @@ class NFA:
     VISUNAME = True     # default visualisation of automaton's name
     VISUFONT = "Libertinus Sans, Linux Biolinum, Times New Roman, Liberation serif" # defaut fontname
     VISUPREPEND = False # default to prepending visus (pdf in reverse order)
+    VISUCROP = False    # defaut dot/pdf visualisation: crop figure?
     VISU_INITIAL_ARROW = True   # True for initial arrow, else special style
     VISURANKDIR="LR"    # dot parameter rankdir for graph direction / TB
     VISULAYOUT="dot"    # layout engine to use: dot, neato, [s]fdp, circo, twopi, osage
@@ -1052,8 +1053,7 @@ class NFA:
              dmod={},
              pdfname=None,
              pdfprepend=None,
-             pdfoverwrite=False,
-             pdfcrop=False,
+             pdfcrop=None,
              comment="",
              nocomment=False,
              name=None,
@@ -1252,8 +1252,8 @@ class NFA:
 
         is_small = original.size < NFA.LARGE
         pdf_renderer.do_dot(dot_contents, pdfname,
-                            pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
-                            pdfoverwrite=pdfoverwrite, pdfcrop=pdfcrop,
+                            pdfprepend  =NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
+                            pdfcrop     =NFA.VISUCROP if pdfcrop is None else pdfcrop,
                renderer="dot" if is_small else NFA.LARGE_RENDERER,
                renderer_options= [] if is_small else NFA.LARGE_RENDERER_OPTIONS )
         if print_current: print(erase_line, end="")
