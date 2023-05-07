@@ -119,6 +119,9 @@ class fset(frozenset): # less ugly writing in subset constructions
     def __and__(s, o): return fset(frozenset.__and__(s, o))
     def __sub__(s, o): return fset(frozenset.__sub__(s, o))
 
+class ffset(fset): # only for converting into something with a correct repr
+    def __repr__(s): return f"fset({{{', '.join(map(repr,s))}}})"
+
 # def deep_freeze(s):
 #     """deeply change structure to convert all sets into fsets"""
 #     try:
@@ -305,7 +308,7 @@ class pdf_renderer:
                 for t in targets: Path(t).unlink(missing_ok=1)
                 with s.jobsLock:
                     for jn in done: del s.jobs[jn]
-            sleep(0.3)
+            else: sleep(0.3)
 
     def print_status(s):
         """

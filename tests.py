@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import toolkit
 from nfa import NFA
-from toolkit import powerfset, pdf_renderer
+from toolkit import powerfset, pdf_renderer, fset
 
 #####################################
 NFA.clear()
@@ -660,8 +660,7 @@ def fonts(solve=1):
         "Linux Biolinum",
         "Libertinus Sans",
         "Libertinus Math",
-        "Libertinus",
-        "Libertinus, Linux libertine",
+        "Linux libertine",
         "Times", # -> Nimbus Roman
         "DejaVu Math TeX Gyre",
         "Times New Roman",
@@ -670,7 +669,7 @@ def fonts(solve=1):
         "URW Bookman",
         "Noto Serif",
         "Helvetica", # -> Nimbus Sans
-        "Liberation Sans, Arial",
+        "Arial",
         "Noto Sans",
         ]:
         if solve and toolkit.sh.which("fc-match"): print(font, "->",
@@ -687,7 +686,14 @@ def concat_changes_test():
             for i in range(3):
                 NFA.visutext(f"{target} {prepend=} n°{i}", pdfname=target, pdfprepend=prepend)
 
-
+def repr_test():
+    A = NFA.nsprod(
+            NFA.of_word("abc").map(f=toolkit.num_to_str).named("A"),
+            NFA.universal("abc").named("B"), sds=[{"A":x,"B":x} for x in "abc"])
+    A = (A @ A).mini().named("repr() test")
+    r = A.repr()
+    B = eval(r).visu()
+    assert A==B
 
 
 
@@ -716,16 +722,14 @@ def main():
     synchro_prod_poly_example()
     hard_minimisation()
     process_language_v1()
+    # concat_changes_test() # writes to other file
+    repr_test()
     fonts()
-    # concat_changes_test()
 
 # NFA.sanity_check()
 # fonts()
 # from transition_deterministic_minimisation import *
 main()
-# fonts()
-# ctl_tests()
-# process_language_v1()
 
 
 pdf_renderer.print_status()

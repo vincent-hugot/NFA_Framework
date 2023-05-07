@@ -863,7 +863,7 @@ class NFA:
                f"F {len(s.F):<3} {sortstr(s.F)}\n"\
                f"Δ {len(s.Δ):<3} {sortstr(s.Δ)}"
 
-    def universal(al):
+    def universal(al="ab"):
         """universal automaton on alphabet"""
         return NFA({0},{0}, { (0,a,0) for a in al },
                    name="/U:" + (r:=repr(al))[:20] + ("..." if len(r)>20 else ""),
@@ -1679,16 +1679,25 @@ class NFA:
                    + ( [ (p,"",q) for p in Q for q in Q if p != q if rand.random() < pe ] if pe else [] )
                    + list(islice( ((p,"",q) for p in rand.sample(Q,n) for q in rand.sample(Q,n) if p != q) , ne))
                    ).named(f"rand({n=},{s=},pt={pt:.2f},pe={pe:.2f},{ne=})")
-        # transitions (p,x,p) should have twice the proba but I don't detect it ???
+        #TODO: for efficiency, exchange rand and rands, to not repeat the prelude each time
+    
 
     @staticmethod
     def rands(*a,**k):
         """infinite stream of random NFA, as rand()"""
         while True: yield NFA.rand(*a,**k)
 
+    #TODO: rand_search # parallel search for automata. Signature tbd.
+
     def repr(s):
-        """Python code for the NFA; only works well for basic states, due to str vs repr fuckery; see fset"""
-        return f"NFA(I={repr(s.I)},\nF={repr(s.F)},\nΔ={repr(s.Δ)},\nname={repr(s.name)})"
+        """Python code for the NFA"""
+        def convert(o):
+            match o: #  str vs repr fuckery; see fset
+                case fset():                    return ffset(map(convert,o))
+                case set()|tuple()|frozenset(): return type(o)(map(convert,o))
+                case _:                         return o
+        def rep(x): return repr(convert(x))
+        return f"NFA(\n\tI={rep(s.I)},\n\tF={rep(s.F)},\n\tΔ={rep(s.Δ)},\n\tname={repr(s.name)}\n)"
 
     def past(s,q):
         """past of state q"""
