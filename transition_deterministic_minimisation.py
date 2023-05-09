@@ -324,7 +324,7 @@ def search_covers(A0, n):
     return minA
 
 
-def do_normal_partition():
+def do_search_covers():
     # NFA.NOVISU = 1
     search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
     search_covers(uniquelast("abc", 1).named("B"), 3)
@@ -350,7 +350,7 @@ def do_normal_partition():
 # do_modulo_break()
 # Adrien_normal_counterexample()
 # do_past_future_analysis()
-do_normal_partition()
+do_search_covers()
 
 # for N in range(2,100):
 #     print(N); bf_permut(N)
