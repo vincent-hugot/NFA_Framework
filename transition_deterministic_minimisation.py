@@ -306,10 +306,11 @@ def do_past_future_analysis():
 
     past_breaking(A)
 
-def normal_partition(A0,n):
+def search_covers(A0, n):
     NFA.visutext(f"{A0.name}, {n}")
     A0.visu()
-    A = A0.mini().visu()
+    A = A0.mini().visu() # unneeded, but just for info
+    # A = A0.copy()
     brnf = A.reverse().dfa().renum().reverse().visu()
 
     def cut(Is) -> NFA:
@@ -325,14 +326,14 @@ def normal_partition(A0,n):
 
 def do_normal_partition():
     # NFA.NOVISU = 1
-    normal_partition((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
-    normal_partition(uniquelast("abc", 1).named("B"), 3)
-    normal_partition( C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 3 )
-    normal_partition( C, 2 )
-    normal_partition( Adrien_non_unique_minimal, 3)
-    normal_partition( Adrien_non_unique_minimal, 2)
-    normal_partition(bonfante_permut(2), 2)
-    normal_partition( adrien_periods(3), 3 )
+    search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
+    search_covers(uniquelast("abc", 1).named("B"), 3)
+    search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 3)
+    search_covers(C, 2)
+    search_covers(Adrien_non_unique_minimal, 3)
+    search_covers(Adrien_non_unique_minimal, 2)
+    search_covers(bonfante_permut(2), 2)
+    search_covers(adrien_periods(3), 3)
 
 
 

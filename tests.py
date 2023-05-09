@@ -728,8 +728,8 @@ def main():
 
 # NFA.sanity_check()
 # fonts()
-# from transition_deterministic_minimisation import *
-main()
+from transition_deterministic_minimisation import *
+# main()
 
 
 pdf_renderer.print_status()
