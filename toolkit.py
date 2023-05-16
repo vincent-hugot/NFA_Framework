@@ -316,6 +316,7 @@ class pdf_renderer:
         At the end, if there have been problems, vomit relevant info.
         Blocking call until all is rendered.
         """
+        if s.concatenator is None: return
         rot = rotating_timer_gen()
         while not s.concatenator.done():
             print(erase_line+f"PDF> {next(rot)} jobs: {len(s.jobs)}", end="")

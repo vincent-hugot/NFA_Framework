@@ -335,6 +335,20 @@ def do_search_covers():
     search_covers(bonfante_permut(2), 2)
     search_covers(adrien_periods(3), 3)
 
+def do_adrien_big_counter():
+    def cycle(a,n):
+        return [ (f"{a}{i}", "#", f"{a}{(i+1)%n}") for i in range(n) ]
+    A = NFA.spec("""
+    0 c0
+    a0 b0 b2
+    c0 c a2
+    0 a a0 c a0
+    0 b b0
+    """, "Big counter")
+    A.add_rules(cycle("a", 4) + cycle("b", 6))
+    A.visu()
+    search_covers(A, 2)
+
 
 
 
@@ -350,7 +364,8 @@ def do_search_covers():
 # do_modulo_break()
 # Adrien_normal_counterexample()
 # do_past_future_analysis()
-do_search_covers()
+# do_search_covers()
+do_adrien_big_counter()
 
 # for N in range(2,100):
 #     print(N); bf_permut(N)
