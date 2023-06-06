@@ -63,6 +63,8 @@ class NFA:
     LARGE_RENDERER_OPTIONS = ["-Goverlap=false"]  # additional graph renderer options
     LARGE = 800        # a NFA is considered large when it reaches this size
 
+    pdf_renderer = pdf_renderer()
+
     def __init__(s,I=(),F=(),Δ=(),name="",Q=(),Σ=(),trimmed=False,worder=str):
         """
         :return: New NFA
@@ -931,7 +933,7 @@ class NFA:
         texc = s.tex(*texargs,**texkwargs)
         with open(texout,'w') as f: f.write(texc)
         pdfname = NFA.VISUPDF if not pdfname else pdfname
-        pdf_renderer.do_tex(texc,pdfname, pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
+        NFA.pdf_renderer.do_tex(texc,pdfname, pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
             silent=silent)
         if print_current: print(erase_line, end="")
         return s
@@ -1251,7 +1253,7 @@ class NFA:
             dot_contents = f.getvalue()
 
         is_small = original.size < NFA.LARGE
-        pdf_renderer.do_dot(dot_contents, pdfname,
+        NFA.pdf_renderer.do_dot(dot_contents, pdfname,
                             pdfprepend  =NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
                             pdfcrop     =NFA.VISUCROP if pdfcrop is None else pdfcrop,
                renderer="dot" if is_small else NFA.LARGE_RENDERER,

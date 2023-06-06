@@ -732,4 +732,4 @@ from transition_deterministic_minimisation import *
 # main()
 
 
-pdf_renderer.print_status()
+NFA.pdf_renderer.print_status()

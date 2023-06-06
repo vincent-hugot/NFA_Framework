@@ -1,6 +1,6 @@
 from nfa import *
 
-NFA.VISULANG=0
+NFA.VISULANG=10
 # NFA.NOVISU = True
 
 def a_in_nth_pos(n,a="a",al="ab"):
@@ -310,32 +310,29 @@ def search_covers(A0, n):
     NFA.visutext(f"{A0.name}, {n}")
     A0.visu()
     A = A0.mini().visu() # unneeded, but just for info
-    # A = A0.copy()
-    brnf = A.reverse().dfa().renum().reverse().visu()
+    # A = A0.copy() # for big counter
+    brnf = A.reverse().dfa().renum().reverse().named("BRNF")
+
+    # brnf = NFA.union(*(A.past(q).mini() for q in A.F)).trans_det_Moore()
+    # brnf = NFA.union(*(A.future(q).mini() for q in A.I)).trans_det_Moore()
+    brnf.visu()
 
     def cut(Is) -> NFA:
         A = brnf.copy(); A.I = Is
         return A.mini().named(Is)
 
+    # if len(brnf.I) < n:
+    #     print("Algorithm inapplicable:", A0.name)
+    #     return A.named("not a solution").visu()
+
     mincov = min(covers(brnf.I, n), key=lambda cover: len(NFA.Union(map(cut, cover)).trans_det_Moore().Q))
     minA = NFA.Union(map(cut, mincov)).visu().trans_det_Moore().visu().renum().visu()
 
-    assert minA == A
+    assert minA == A and minA.is_det(show=1, ignore_inits=1)
+    # assert len(minA.Q) <= len(A0.Q) if A0.is_det(ignore_inits=1) else True
     return minA
 
-
-def do_search_covers():
-    # NFA.NOVISU = 1
-    search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
-    search_covers(uniquelast("abc", 1).named("B"), 3)
-    search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 3)
-    search_covers(C, 2)
-    search_covers(Adrien_non_unique_minimal, 3)
-    search_covers(Adrien_non_unique_minimal, 2)
-    search_covers(bonfante_permut(2), 2)
-    search_covers(adrien_periods(3), 3)
-
-def do_adrien_big_counter():
+def adrien_big_counter():
     def cycle(a,n):
         return [ (f"{a}{i}", "#", f"{a}{(i+1)%n}") for i in range(n) ]
     A = NFA.spec("""
@@ -346,8 +343,21 @@ def do_adrien_big_counter():
     0 b b0
     """, "Big counter")
     A.add_rules(cycle("a", 4) + cycle("b", 6))
-    A.visu()
-    search_covers(A, 2)
+    return A
+
+def do_search_covers():
+    # NFA.NOVISU = 1
+    # search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
+    # search_covers(uniquelast("abc", 1).named("B"), 3)
+    # search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 6) # overkill on 3
+    # search_covers(C, 2)
+    # search_covers(Adrien_non_unique_minimal, 3)
+    # search_covers(Adrien_non_unique_minimal, 2)
+    # search_covers(bonfante_permut(2), 2)
+    # search_covers(adrien_periods(3), 3)
+    search_covers(adrien_big_counter(), 2)
+
+
 
 
 
@@ -364,8 +374,7 @@ def do_adrien_big_counter():
 # do_modulo_break()
 # Adrien_normal_counterexample()
 # do_past_future_analysis()
-# do_search_covers()
-do_adrien_big_counter()
+do_search_covers()
 
 # for N in range(2,100):
 #     print(N); bf_permut(N)

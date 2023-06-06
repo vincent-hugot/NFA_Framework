@@ -327,8 +327,6 @@ class pdf_renderer:
 
 def rotating_timer_gen(): yield from cycle("-\|/")
 
-pdf_renderer = pdf_renderer()
-
 def flattupleL(t):
     """Flatten left-assoc single depth tuple"""
     t,x = t
@@ -415,7 +413,11 @@ def partitions(s,n=2):
 
 def covers(s, n=2):
     """overlapping partitions: gen of tuples of sets"""
-    S = powerfset(s, 1, len(s) - 1)
+    if (d := n - len(s)) > 0:
+        yield from ( c+(fset(),)*d for c in covers(s, len(s)))
+        return
+    # S = powerfset(s, 1, len(s) - 1)
+    S = powerfset(s, 1)
     yield from ( l for l in combinations(S,n) if fset.union(*l) == s )
 
 def pairwise(iterable):
