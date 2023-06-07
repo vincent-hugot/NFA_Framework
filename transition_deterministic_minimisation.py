@@ -350,14 +350,16 @@ def adrien_big_counter():
 
 def do_search_covers():
     # NFA.NOVISU = 1
-    # search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
-    # search_covers(uniquelast("abc", 1).named("B"), 3)
-    # search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 6) # overkill on 3
-    # search_covers(C, 2)
-    # search_covers(Adrien_non_unique_minimal, 3)
-    # search_covers(Adrien_non_unique_minimal, 2)
-    # search_covers(bonfante_permut(2), 2)
-    # search_covers(adrien_periods(3), 3)
+    search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
+    search_covers( (NFA.of_word("#") + modulo(K := 4)
+                 | (NFA.of_word("#") + modulo(L := 3)) ).rm_eps().trim().renum().named("A broken"), 2)
+    search_covers(uniquelast("abc", 1).named("B"), 3)
+    search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 6) # overkill on 3
+    search_covers(C, 2)
+    search_covers(Adrien_non_unique_minimal, 3)
+    search_covers(Adrien_non_unique_minimal, 2)
+    search_covers(bonfante_permut(2), 2)
+    search_covers(adrien_periods(3), 3)
     search_covers(adrien_big_counter(), 2)
 
 
