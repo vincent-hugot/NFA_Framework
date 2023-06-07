@@ -315,15 +315,18 @@ def search_covers(A0, n):
 
     # brnf = NFA.union(*(A.past(q).mini() for q in A.F)).trans_det_Moore()
     # brnf = NFA.union(*(A.future(q).mini() for q in A.I)).trans_det_Moore()
+
+    # brnf = A.copy() # attempt at resuiduals Big counter
+    # i = peek(brnf.I)
+    # brnf.add_rules( { (a, a, q)  for (p,a,q) in brnf.Δ if p==i } )
+    # brnf.I = set("abc")
+    # brnf = brnf.trim()
+
     brnf.visu()
 
     def cut(Is) -> NFA:
         A = brnf.copy(); A.I = Is
         return A.mini().named(Is)
-
-    # if len(brnf.I) < n:
-    #     print("Algorithm inapplicable:", A0.name)
-    #     return A.named("not a solution").visu()
 
     mincov = min(covers(brnf.I, n), key=lambda cover: len(NFA.Union(map(cut, cover)).trans_det_Moore().Q))
     minA = NFA.Union(map(cut, mincov)).visu().trans_det_Moore().visu().renum().visu()
