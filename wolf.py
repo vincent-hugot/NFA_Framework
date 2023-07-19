@@ -1,94 +1,165 @@
 #!/usr/bin/env python3
 
-# Exercice 1 (Le loup, la chèvre et le chou) Un fermier accompagné d’une chèvre, d’un
-# loup et d’un choux doit traverser une rivière pour rentrer chez lui. Malheureusement, il ne
-# possède qu’une minuscule barque ne lui permettant de transporter qu’un seul de ses "compa-
-# gnon" à la fois. Ainsi, à chaque aller-retour, il doit en laisser deux sans surveillance le temps
-# de faire le voyage. Comment va-t-il s’y prendre pour tous les faire traverser, sans qu’aucun
-# ne se fasse manger par un de ses "collègue" durant la période où ils ne sont pas surveillés ?
-# (Le loup mange la chèvre et la chèvre mange le chou.)
+# Copyright 2019-2023,  Vincent Hugot <vincent.hugot@insa-cvl.fr>
 
+# Once upon a time a farmer went to a market and purchased a wolf, a goat,
+# and a cabbage. On his way home, the farmer came to the bank of a river and
+# rented a boat. But crossing the river by boat, the farmer could carry only
+# himself and a single one of his purchases: the wolf, the goat, or the
+# cabbage.
+#
+# If left unattended together, the wolf would eat the goat, or the goat
+# would eat the cabbage.
+#
+# The farmer's challenge was to carry himself and his purchases to the far
+# bank of the river, leaving each purchase intact. How did he do it?
+
+# !! COMPARE THE CODE BELOW TO THE MATHS IN THE LECTURE NOTES !!
 
 from nfa import *
 
 NFA.clear()
+# Automata are visualised in a PDF (visu.pdf by default).
+# Each A.visu() appends a page representing automaton A to the PDF.
+# clear() deletes the PDF, so that each run of the script regenerates all pages.
 
-NFA.NOVISU = False
 NFA.VISULANG = 2
 NFA.VISU_INITIAL_ARROW = False
 NFA.VISUDOUBLEARROWS = True
+# details of how I want the automata to be represented. Not important.
 
-actorsv = wolf, goat, cabb, farmer = "Wolf", "Goat", "Cabb", "Farmer"
-actors = fset(actorsv)
+
+actors = W, G, C, F = "WGCF"
+A = fset(actors)
+# fset = frozenset; see Python lecture notes on why that matters.
+
 
 NFA.visutext("Naïve method")
+# Creates a PDF page with that text.
 
 FWGC_Problem = NFA(
-    {actors},
+    {A},            # initial states
     name="FWGC",
     worder=tuple
+    # Since the "letters" of our automaton are not going to be actual letters
+    # but something more complicated (set of actors moving), we tell it that its
+    # "words" are not going to be actual strings but tuples instead.
+    # This is an implementation detail,  only important for
+    # the proper display of the solutions in the PDF.
 ).visu()
 
-def _licit(s):
-    return farmer in s if {wolf, goat} <= s or {goat, cabb} <= s else True
+def ℓ0(s): return F in s if {W, G} <= s or {G, C} <= s else True
+# "P => Q" becomes "Q if P else True" in Python.
+# Could also be "not(P) or Q"
 
-def licit(q):
-   return _licit(q) and _licit(actors - q)
+def ℓ(q):  return ℓ0(q) and ℓ0(A - q)
 
-# def licit(Q): return True # what if no constraints?
+# def ℓ(q): return True
+# Uncomment to see what happens if there are no constraints
 
-def growfarmer(A):
-    has=False
-    def extend(q):
-        nonlocal has
-        if farmer in q:
-            for a in q:
-                Q = q - {a, farmer}
-                if licit(Q): has = A.try_rule(q, a, Q) or has
+def growfarmer(Aut : NFA):
+    """Generate new transitions for the automaton"""
+    def extend(p):
+        if F in p:
+            for a in p:
+                λ = fset({a, F})
+                q = p - λ
+                if ℓ(q): Aut.add_rule(p, λ, q)
 
-        if farmer not in q:
-            for a in actors - q:
-                Q = q | {a,farmer}
-                if licit(Q): has = A.try_rule(q, a, Q) or has
+        if F not in p:
+            for a in A - p:
+                λ = fset({a, F})
+                q = p | {a, F}
+                if ℓ(q): Aut.add_rule(p, λ, q)
 
-    for q in A.Q.copy(): extend(q)
-    return has
-
+    for p in Aut.Q.copy(): extend(p)
 
 FWGC_Problem.growtofixpoint(growfarmer, record_steps=True)
+# generate transitions until nothing left to do
+
 FWGC_Problem.F = {fset()}
+# set final states
 
-# FWGC_Problem.visusteps()#(rankdir="TB")
-FWGC_Problem.map(f=lambda q: (
-    ", ".join(q) + " \\n~~~~~~~\\n " + ", ".join(actors-q)
-)).visu(break_strings=False, pdfcrop=True)
+NFA.visutext("Raw solution:")
+FWGC_Problem.visu()
+
+NFA.visutext("A nicer view of the solution:")
+# This is not important; just to get a nicer diagram
+
+FWGC_Problem.map(
+    f=lambda q: (
+        ", ".join(q) + " \\n~~~~~~~\\n " + ", ".join(A - q)
+    ),
+    # transform states to get representation of the river and see people
+    # of both banks explicitly
+    g=lambda a: peek(a-{F}) if len(a)>1 else F
+    # transform transitions to only show the pertinent actor
+).visu(break_strings=False, pdfcrop=True)
+
+
+NFA.visutext("Step-by-step visualisation:")
+FWGC_Problem.visusteps()
+# this can be called if record_steps=True is passed to growtofixpoint
+
+# a visual glitch may occur where transitions appear before they should.
+# If you have a patch to propose to fix the bug, I'm interested.
+
+
 
 ##########################################################################
 ##########################################################################
 
-NFA.NOVISU = False
 NFA.visutext("Named Product")
 
-Char = NFA.spec("""
+aut_actor = NFA.spec("""
 0
 1
 0 1 1
-1 0 0""","Char").visu()
+1 0 0""","Actor, left <-> right").visu()
 
-sysv = [Char.copy().named(x) for x in actorsv]
-sds = [{farmer:x, a:x} for a in actors for x in (0, 1)]
+Components = [aut_actor.copy().named(x) for x in actors]
+# Whereas in maths we use the automata directly as keys in the mappings,
+# e.g. {F:x, G:x}, we can't do that in Python because NFA are mutable.
+# Thus, the named product .nsprod will use the .name of the automata passed
+# as arguments as keys, instead of the automata themselves.
+
+# Above I use actors, the list or string, as opposed to A, the set, simply
+# to control the order in which the actors are listed. Otherwise, it would change
+# with every execution, but of course it would work.
+
+S = [{F:x, a:x} for a in actors for x in (0, 1)]
+
 
 def prodfilter(A, P, v, Q):
-    return Q not in A.Q and _licit(invd(Q)[0]) and _licit(invd(Q)[1]) # not in Q optional: cycles or not.
+    return ℓ0(invd(Q)[0]) and ℓ0(invd(Q)[1]) and Q not in A.Q
+    # the filter is called on each transition (P, v, Q) generated by the product;
+    # Most of the time we care only about the target state Q, and that's how
+    # I defined the notion of filter in the lecture notes, but it's useful to have
+    # more options in the implementation.
 
-P = NFA.nsprod(*sysv,
-               sds=sds,
+    # A represents the previous step of the growth of the automaton.
+    # Behind the scenes, my implementation of the product uses growtofixpoint.
+
+    # "Q not in A.Q" is optional: it determines whether we will bother with
+    # transitions leading into states that we already have. Since this is an
+    # accessibility problem we don't really care to go back, so we filter them out.
+    # Remove this clause to get the exact same output as the previous method.
+
+P = NFA.nsprod(*Components,
+               sds=S,
                filter=prodfilter,
-               # nice=True, # breaks visusteps if true
-               # record_steps=True
                ).visu()
+# Call the named synchronised product.
+# There are interesting optional parameters such as nice and record_steps
 
-print(repr(P))
-# P.visusteps()
 P.dnice().visu()
-P.dnice(f="states").visu()
+# Gives you a nicer rendering of dictionnaries in NFA;
+# internally, since dictionnaries are mutable, the implementation uses tuples of couples.
+# Thus the raw result of nsprod has states/transitions of the form (('G', 0), ('F', 0)).
+# .dnice turns this into the more legible "G:0, F:0"
+
+P.dnice(f=("-1", 0), g="systems").visu()
+P.dnice(f="groups",  g="systems").visu()
+# .dnice offers a few predefined functions for more compact visualisation of states
+# and transitions.
+# Not terribly important, but think about it when you have large, hard-to-read graphs

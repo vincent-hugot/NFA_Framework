@@ -72,14 +72,16 @@ def inputint(prompt="? ", default=0, upper=None):
     return n
 
 
-def fresh_gen(s=()):
-    """return generator of states not in s (at next() time)."""
+def fresh_gen(s=(), trans=lambda x:x):
+    """return generator of states not in s (at next() time).
+    States are 0, 1,... or trans(0), trans(1),... """
     # s = set(s) # local copy in case s modified during lifespan of gen
     # that would not work as expected, as this is executed at time of first next(),
     # not actually at time of fresh_gen() call...
     k=0
     while True:
-        if k not in s: yield k
+        x = trans(k)
+        if x not in s: yield x
         k+=1
 
 def base_case_gen(g,b):
@@ -430,10 +432,21 @@ def r(it,maxi=None):
     return range( len(it) if maxi is None else min(maxi,len(it)) )
 
 def invd(d):
-    """invert dictionary or assoc list, losslessly"""
+    """invert dictionary or assoc list, losslessly;
+    targets set, so looses key order
+    key: value  ->  value : {key1, key2}"""
     if not isinstance(d,dict): d = dict(d)
     invd = defaultdict(set)
     for k, v in d.items(): invd[v].add(k)
+    return invd
+
+def invdl(d):
+    """invert dictionary or assoc list, losslessly;
+    keeps order or appearence of keys:
+    key: value  ->  value : [key1, key2]"""
+    if not isinstance(d,dict): d = dict(d)
+    invd = defaultdict(list)
+    for k, v in d.items(): invd[v].append(k)
     return invd
 
 def is_prefix(t, tt): return len(t) <= len(tt) and tt[:len(t)] == t

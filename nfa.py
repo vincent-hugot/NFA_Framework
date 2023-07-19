@@ -1,5 +1,5 @@
 
-# Copyright 2019-2021,  Vincent Hugot <vincent.hugot@insa-cvl.fr>
+# Copyright 2019-2023,  Vincent Hugot <vincent.hugot@insa-cvl.fr>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy of
 # this software and associated documentation files (the "Software"), to deal in
@@ -442,8 +442,7 @@ class NFA:
                 A.add_rules(newrules)
             # print(repr(A.visu()))
             hook(A)
-            if stopper and stopper(A): return False
-            return newrules
+            if stopper and stopper(A): return "STOP"
         R = NFA(I, (), (),worder=tuple).growtofixpoint(grow,record_steps)
         if nice:
             assert not record_steps, "Steps visualisation incompatible with dnice mapping"
@@ -452,15 +451,29 @@ class NFA:
 
     def dnice(s,f=None, g=None):
         """nicer states and transitions for dictionary-based product automata.
-        f, g as map; predefined: "dict", "states", "systems"
+        f, g are the same parameters as for map, plus some predefined values:
+        on example (('A', 1), ('B', 2), ('C', 2))
+            "dict",             -> "A:1, B:2, C:2"
+            "states",           -> "122"
+            "systems"           -> "ABC"
+            ("-1", x): reverse mapping on x; e.g. with x=2
+                                -> "BC"
+            "groups"            -> "1:A, 2:BC"
         """
-        def dict(x): return ', '.join(f'{cn}:{a}' for cn, a in x)
+        def dict_(x): return ', '.join(f'{cn}:{a}' for cn, a in x)
         def states(x): return ''.join(str(a) for _,a in x)
         def systems(x): return ''.join(str(a) for a,_ in x)
+        def groups(q):
+            d = dict(q)
+            return ", ".join( f"{v}:{''.join(invdl(q)[v])}"
+                              for v in sorted(set(d.values())) )
         def dispatch(fid,default):
             if fid is None: return default
-            return {"dict": dict, "states": states, "systems": systems}[fid]
-        f = dispatch(f,dict); g = dispatch(g,dict)
+            match fid:
+                case ("-1", x): return lambda q: ''.join(invdl(q)[x])
+            return {"dict": dict_, "states": states, "systems": systems,
+                    "groups": groups}[fid]
+        f = dispatch(f,dict_); g = dispatch(g,dict_)
         return  s.map(f,g)
 
 
@@ -1573,17 +1586,25 @@ class NFA:
     def growtofixpoint(s,grow,record_steps=False):
         """In place: grow the automaton according to grow(A)
         monotone growth procedure, until fixpoint is reached.
-        grow acts as predicate "I have grown".
+
+        grow(A) adds states or transition, in place.
+
+        It is called repeatedly until the size of A stops increasing, or
+        until it returns "STOP".
 
         record_steps: state/trans -> step index dict created in s._grow_step
         """
         n = 0
-        if record_steps: s._grow_step = {x:0 for x in s.Q | s.Δ }
+        if record_steps: s._grow_step = {x: 0 for x in s.Q | s.Δ}
+        size = -1
         while True:
-            if not grow(s): break
+            if grow(s) == "STOP": break
+            if (ns := s.size) == size: break
+            assert ns >= size
+            size = ns
             n += 1
             if record_steps:
-                s._grow_step.update({x:n for x in (s.Q | s.Δ) - s._grow_step.keys()})
+                s._grow_step.update({x: n for x in (s.Q | s.Δ) - s._grow_step.keys()})
         return s
 
     # interface automata; cf Sebti Mouelhi PhD 2011
