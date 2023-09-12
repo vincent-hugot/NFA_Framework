@@ -645,7 +645,7 @@ def process_language_v1():
         }
     """)
 
-    # print(sync)
+    print(sync)
     for A in As: A.visu()
     res = NFA.nsprod(*As, sds=sync)
     res.visu()
@@ -730,6 +730,6 @@ def main():
 # fonts()
 from transition_deterministic_minimisation import *
 # main()
-
+# process_language_v1()
 
 NFA.pdf_renderer.print_status()

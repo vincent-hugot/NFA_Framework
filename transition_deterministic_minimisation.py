@@ -306,6 +306,20 @@ def do_past_future_analysis():
 
     past_breaking(A)
 
+def adrien_big_counter():
+    def cycle(a,n):
+        return [ (f"{a}{i}", "#", f"{a}{(i+1)%n}") for i in range(n) ]
+    A = NFA.spec("""
+    0 c0
+    a0 b0 b2
+    c0 c a2
+    0 a a0 c a0
+    0 b b0
+    """, "Big counter")
+    k=4
+    A.add_rules(cycle("a", 2*k) + cycle("b", 3*k))
+    return A
+
 def search_covers(A0, n):
     NFA.visutext(f"{A0.name}, {n}")
     A0.visu()
@@ -335,18 +349,25 @@ def search_covers(A0, n):
     # assert len(minA.Q) <= len(A0.Q) if A0.is_det(ignore_inits=1) else True
     return minA
 
-def adrien_big_counter():
-    def cycle(a,n):
-        return [ (f"{a}{i}", "#", f"{a}{(i+1)%n}") for i in range(n) ]
-    A = NFA.spec("""
-    0 c0
-    a0 b0 b2
-    c0 c a2
-    0 a a0 c a0
-    0 b b0
-    """, "Big counter")
-    A.add_rules(cycle("a", 4) + cycle("b", 6))
-    return A
+
+def Adrien_go_wok(N):
+    def wok(k):
+        def p(n): return f"{k}p{n}" if n<N else q(0)
+        def q(n): return f"{k}q{n}"
+        return NFA(
+            [p(0)],
+            [ q(i) for i in range(2**k, 2**(k+1)) ],#+[q(0)],
+            { (p(j), 1, p(j+1)) for j in range(N) }
+            |
+            {(p(j), 0, p(j + 1)) for j in range(N) if j != k }
+            |
+            {(q(j), "#", q((j + 1) % 2**(k+1))) for j in range(2**(k+1))}
+        )
+    return NFA.Union( wok(k) for k in range(N) ).named(f"woks {N}")
+
+
+
+
 
 def do_search_covers():
     # NFA.NOVISU = 1
@@ -361,10 +382,7 @@ def do_search_covers():
     search_covers(bonfante_permut(2), 2)
     search_covers(adrien_periods(3), 3)
     search_covers(adrien_big_counter(), 2)
-
-
-
-
+    search_covers(Adrien_go_wok(3), 3)
 
 
 ############################
@@ -379,11 +397,7 @@ def do_search_covers():
 # do_modulo_break()
 # Adrien_normal_counterexample()
 # do_past_future_analysis()
-do_search_covers()
+# do_search_covers()
 
-# for N in range(2,100):
-#     print(N); bf_permut(N)
-# for N in range(4, 200, 2):
-#     assert not do_permut(N)
-
+search_covers(Adrien_go_wok(3), 3)
 

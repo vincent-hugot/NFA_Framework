@@ -1890,10 +1890,10 @@ class NFA:
         @v_args(inline=True)
         class trans(Transformer):
             def bool(s, name, init):
-                return NFA.variable_on_range(name, ["True", "False"], str(init)).visu()
+                return NFA.variable_on_range(name, ["True", "False"], str(init))
             def int(s, a, b, name, init):
                 r = [str(x) for x in range(int(a), int(b)+1)]
-                return NFA.variable_on_range(name, r, str(init)).visu()
+                return NFA.variable_on_range(name, r, str(init))
             def false(s): return False
             def true(s): return True
             def process(s, name, bloc):
