@@ -9,6 +9,8 @@ eg_lec = (E("ab") | E("")).star().show_all()
 NFA.visutext("Simplify Expressions (Exercise)")
 
 a, b, eps = E("a"), E("b"), E("")
+
+triple = ( a | a+a | a+a+a ).star().show()
 mystery = ( eps | a.star()+(b+a.star()).star()+b )+a.star()
 mystery.show()
 mystery2 = ( eps | a.star()+( eps | b+(a.star()+b).star()+a.star() )+b )+a.star()
@@ -40,3 +42,7 @@ ident_22 = ( α+(β+α).star() ).show()
 
 ident_31 = ( (α+β | α).star() + α ).show()
 ident_32 = ( α+(β+α | α).star() ).show()
+
+NFA.visutext("Surprise Exam")
+
+sexam = ( eps | b+a.star() ).show_all()
