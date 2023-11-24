@@ -46,3 +46,4 @@ ident_32 = ( α+(β+α | α).star() ).show()
 NFA.visutext("Surprise Exam")
 
 sexam = ( eps | b+a.star() ).show_all()
+

@@ -65,22 +65,23 @@ def reaut(e):
         case OR(l,r):
             A,B = NFA.disjoint([reaut(x) for x in (l,r)])
             return NFA(["i"], ["f"], {
-                ("i", "", next(iter(A.I))),
-                ("i", "", next(iter(B.I))),
-                (next(iter(A.F)), "", "f"),
-                (next(iter(B.F)), "", "f") } | A.Δ | B.Δ ).renum()
+                ("i", "", peek(A.I)),
+                ("i", "", peek(B.I)),
+                (peek(A.F), "", "f"),
+                (peek(B.F), "", "f") } | A.Δ | B.Δ ).renum()
         case CONCAT(l, r):
             A, B = NFA.disjoint([reaut(x) for x in (l, r)])
             return NFA(["i"], ["f"], {
-                ("i", "", next(iter(A.I))),
-                (next(iter(A.F)), "", next(iter(B.I))),
-                (next(iter(B.F)), "", "f")} | A.Δ | B.Δ).renum()
+                ("i", "", peek(A.I)),
+                (peek(A.F), "", peek(B.I)),
+                (peek(B.F), "", "f")} | A.Δ | B.Δ).renum()
         case STAR(e):
             A = reaut(e)
             return NFA(["i"], ["f"], {
-                ("i", "", next(iter(A.I))), ("i", "", "f"),
-                (next(iter(A.F)), "", next(iter(A.I))),
-                (next(iter(A.F)), "", "f")} | A.Δ ).renum()
+                ("i", "", peek(A.I)), ("i", "", "f"),
+                (peek(A.F), "", peek(A.I)),
+                # ("f", "", "i"), # simpler, provided concat is eps, not unify states
+                (peek(A.F), "", "f")} | A.Δ ).renum()
         case _:  raise ValueError(e)
 
 class E:
