@@ -153,7 +153,7 @@ def exo_explosive_det():
     A.texvisu("0 > 1 > 2 > 3")
     A.run("abaabbaaababb")
     # Ad = A.dfa().visu(pdfname="export.pdf")#.texvisu("0 / 1 \n 0 \ 2",renum=True)
-    A.dfa(pdf=NFA.VISUPDF).visu()#.table()
+    A.dfa(pdf=NFA.VISUPDF).visu().visu_table().visu_Moore_table()
     # print(A.dfa())
 
 # exo_explosive_det()
@@ -165,7 +165,7 @@ def exo_aba_factor():
         { (0,'a',0), (0,'b',0), (0,'a',1),
           (1,'b',2), (2,'a',3), (3,'a',3), (3,'b',3) },
         name="_aba_").visu()
-    A.dfa().visu().mini().visu()
+    A.dfa().visu().mini(data=1).visu().visu_Moore_table()
     A.homo({'b': "cde", 'a':'A'}).visu()\
         .homo({'d': ""}).visu().rm_eps().trim().visu()\
         .dfa().visu().mini().visu()
@@ -727,9 +727,7 @@ def main():
     fonts()
 
 # NFA.sanity_check()
-# fonts()
-from transition_deterministic_minimisation import *
-# main()
-# process_language_v1()
+# from transition_deterministic_minimisation import *
+main()
 
 NFA.pdf_renderer.print_status()

@@ -47,3 +47,6 @@ NFA.visutext("Surprise Exam")
 
 sexam = ( eps | b+a.star() ).show_all()
 
+
+
+NFA.pdf_renderer.print_status()

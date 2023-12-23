@@ -237,8 +237,10 @@ class pdf_renderer:
         td = Path(s.temp_dir) / f"do_tex__{jn}"
         td.mkdir(exist_ok=1)
         with open(texfile := td/"x.tex", 'w') as f:
-            f.write("\documentclass{minimal}\n" +
-                    "\\usepackage{tikz}\n\\usetikzlibrary{backgrounds,arrows,automata,shadows,matrix,decorations,shapes,calc,positioning}" +
+            f.write("\documentclass{article}\n\pagestyle{empty}\n"
+                    "\\usepackage{tikz,array,pxfonts}"
+                    "\\usepackage[euler-digits,euler-hat-accent]{eulervm}"
+                    "\n\\usetikzlibrary{backgrounds,arrows,automata,shadows,matrix,decorations,shapes,calc,positioning}" +
                     "\n\\tikzset{every state/.append style={minimum size=1.5em,\n  circular glow={fill=gray!30},fill=blue!2!white\n}}" +
                     "\n\\tikzset{accepting/.append style={fill=green!2,circular glow={fill=gray!30}}}\n\\tikzset{fsa/.style={baseline=-.5ex,semithick,>=stealth'," +
                     "\n  shorten >=1pt,auto,node distance=3.5em,initial text=}}\n\\tikzset{fst/.style={fsa,node distance=5em}}" +
@@ -412,6 +414,15 @@ def powerfset(s, minlen=0, maxlen=2**64):
 
 def partitions(s,n=2):
     yield from ( map(fset,part) for part in set_partitions(s,n) )
+    
+def int_partition(N, k, m=0):
+    """partition N in k parts, minimum bucket being m=0"""
+    assert k >= 1, k
+    if N < m: return
+    if k == 1: yield [N]; return
+    for n in range(m,N+1):
+        for part in int_partition(N-n, k-1, m):
+            yield [n]+part
 
 def covers(s, n=2):
     """overlapping partitions: gen of tuples of sets"""

@@ -88,7 +88,7 @@ class NFA:
         s._grow_step = None # for step by step constuctions
         s.Moore_table = None
         s.Moore_steps = 0
-        s.Moore_table_tex = ""
+        s.Moore_table_tex = None
         s.classes = None
         s.inv_classes = None
         s.rm_eps_closures = None
@@ -1356,16 +1356,15 @@ class NFA:
 
     def Moore(s, table=False, data=False, preprocess=True):
         """ Automaton minimisation, Moore method.
-            :param table: print Moore table as side effect """
+            :param table: print Moore table as side effect
+            :param data: store minimisation info in result automaton"""
         oname = s.name
         if preprocess: s = s.trim().dfa().complete()
         else: s = s.copy()
         if not s.Q: return s
-        try: Q = sorted(s.Q)
-        except TypeError : Q = (sort_states if data or table else list)(s.Q)
+        Q = (sort_states if data or table else list)(s.Q)
         symbs = sorted(s.Σ, key=str)
-        cl = {} ## classes : { n : { symbol : { state: class }  } } symbol can be eps
-        cl[0] = {}
+        cl = { 0: {} }  ## classes : { n : { symbol : { state: class }  } } symbol can be eps
         first = Q[0] in s.F # to ensure first class is always I
         cl[0][""] = { q : int((q in s.F) != first) for q in Q }
         l = s.trans_2d()
@@ -1399,12 +1398,50 @@ class NFA:
         if data:
             res.Moore_table = cl
             res.Moore_steps = n+1
+            # no real need to print last bilan, but needed for transition table
+            # if len(set(cl[n][""].values())) >= len(Q): n -= 1
             res.Moore_table_tex = s._Moore_table(Q, symbs, cl,n,mode="return")
             res.classes = classes
             res.inv_classes = { fset(v):k for k,v in classes.items() }
         return res
 
+    def visu_Moore_table(s, pdfname=None, pdfprepend=None, silent=1):
+        """
+        Visualise Moore minimisation table; will use existing table if minimised with data=1
+        :param pdfname:
+        :param pdfprepend:
+        :param silent: silence tex output
+        :return: unchanged automaton
+        """
+        if NFA.NOVISU: return s
+        tab = s.Moore_table_tex
+        if tab is None: tab = s.Moore(data=1).Moore_table_tex
+        pdfname = NFA.VISUPDF if not pdfname else pdfname
+        NFA.pdf_renderer.do_tex(tab, pdfname, pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
+                    silent=silent)
+        return s
+
+    def visu_table(s, pdfname=None, pdfprepend=None, silent=1):
+        """
+        Visualise transition table
+        :param pdfname:
+        :param pdfprepend:
+        :param silent: silence tex output
+        :return: unchanged automaton
+        """
+        if NFA.NOVISU: return s
+        tab = s.table(mode="return")
+        pdfname = NFA.VISUPDF if not pdfname else pdfname
+        NFA.pdf_renderer.do_tex(tab, pdfname, pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
+                    silent=silent)
+        return s
+
+
     def _Moore_table(s,Q,symbs,cl,n,mode=print): # used from Moore2 only
+        """
+        :param mode: function of str or "return", default=print
+        :return: tex table for Moore algorithm
+        """
         cid='c<{\ \ }'
         bs = "\\"
         def esc(s):
@@ -1416,8 +1453,8 @@ class NFA:
             f"\hline\n" )
         def pp(c): return f"\\RNum{{{c+1}}}"
         for k in range(n+2):
-            begin+= ("$\eps$" if not k else f"$\\#_{{{k}}}$") \
-                    +  " & " + " & ".join( "\\color{red!50!black}\\bf" + pp(c) for c in cl[k][""].values() ) + "\\\\\n"
+            begin+= ("$\\varepsilon$" if not k else f"$\\#_{{{k}}}$") \
+                    +  " & " + " & ".join( "\\color{red!50!black}\\bfseries" + pp(c) for c in cl[k][""].values() ) + "\\\\\n"
             if k == n+1: break
             for a in symbs:
                 begin += f"${esc(a)}$ & " + " & ".join(pp(c) for c in cl[k][a].values()) + "\\\\\n"
