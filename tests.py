@@ -136,25 +136,24 @@ def shuffles():
 # a in third position before end
 @ann
 def exo_explosive_det():
-    A = NFA( {0}, {3},
-        { (0,'a',0), (0,'b',0), (0,'a',1),
-          (1,'a',2), (1,'b',2),(2,'a',3),(2,'b',3)},
-        name="a__"
-    ).visu()
-    # B = NFA.spec("""
-    # 0
-    # 3
-    # 0 a 0 b 0 a 1
-    # 1 a 2 b 2
-    # 2 a 3 b 3
-    # """,name='B').visu()
-    # print(A)
-    # A.table()
+    A = NFA.spec("""
+    0
+    3
+    0 a 0 b 0 a 1
+    1 a 2 b 2
+    2 a 3 b 3
+    """,name='a__').visu()
     A.texvisu("0 > 1 > 2 > 3")
-    A.run("abaabbaaababb")
-    # Ad = A.dfa().visu(pdfname="export.pdf")#.texvisu("0 / 1 \n 0 \ 2",renum=True)
-    A.dfa(pdf=NFA.VISUPDF).visu().visu_table().visu_Moore_table()
-    # print(A.dfa())
+    # A.run("abaabbaaababb")
+    Ad = A.dfa()
+    A.visu_table(); Ad.visu_table()
+    Ad.visu_Moore_table().visu()
+    def last3(A,q): # semantics of state: last 3 letters read
+        for w in A.past(q):
+            if len(w) >= 3: return w[:3]
+    As = Ad.map(lambda q: last3(Ad,q)).visu().visu_separations()
+    assert As == Ad
+
 
 # exo_explosive_det()
 
@@ -729,5 +728,7 @@ def main():
 # NFA.sanity_check()
 # from transition_deterministic_minimisation import *
 main()
+
+# exo_explosive_det()
 
 NFA.pdf_renderer.print_status()

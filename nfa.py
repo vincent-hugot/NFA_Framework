@@ -924,7 +924,7 @@ class NFA:
         """is literally the exact same NFA"""
         return s.I == o.I and s.F == o.F and s.Δ == o.Δ and s.Σ == o.Σ
 
-    def texvisu(s,*texargs,pdfname=None,pdfprepend=None,texout="__NFA__.tex",
+    def texvisu(s,*texargs,pdfname=None,pdfprepend=None,texout=None,
                 silent=True,print_current=False,renum=False,**texkwargs):
         """TeXperiment: visualise pdf of tex output; same arguments as tex
         :param renum: renum states and use mapping -- use if complicated states
@@ -944,7 +944,8 @@ class NFA:
             S.texvisu(*texargs,qmap=f.get,**texkwargs)
             return s
         texc = s.tex(*texargs,**texkwargs)
-        with open(texout,'w') as f: f.write(texc)
+        if texout is not None:
+            with open(texout,'w') as f: f.write(texc)
         pdfname = NFA.VISUPDF if not pdfname else pdfname
         NFA.pdf_renderer.do_tex(texc,pdfname, pdfprepend=NFA.VISUPREPEND if pdfprepend is None else pdfprepend,
             silent=silent)
@@ -1770,6 +1771,19 @@ class NFA:
     def future_of_set(s,Q):
         """future of nondetermnistic set of states: union of the futures"""
         return NFA.union(*( s.future(q) for q in Q)).named(s.nop("∪".join(f"⟦{q}⟦" for q in Q)))
+
+    def visu_separations(s, P=None, Q=None):
+        """visualise future separation languages between states of PxQ, default all"""
+        P = sort_states(s.Q if P is None else P)
+        Q = sort_states(s.Q if Q is None else Q)
+        seen = set()
+        for p,q in product(P,Q):
+            if p != q and (q,p) not in seen:
+                seen.add((p, q))
+                (s.future(p) ^ s.future(q)).mini().named(f"⟦{p}⟦ ⊖ ⟦{q}⟦ ({s.name})")\
+                    .renum().visu()
+        return s
+
 
     def quotient(s,eq):
         print(s.Q)
