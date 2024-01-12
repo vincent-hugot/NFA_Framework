@@ -9,6 +9,6 @@ sudo pacman -S --needed git pdftk graphviz python tk xz python-pip mpdecimal \
 
 # get my framework, then run tests
 git clone https://github.com/vincent-hugot/NFA_Framework.git
-cd NFA_Framework/ || return
+cd NFA_Framework/ || exit 1
 ./tests.py
 xdg-open visu.pdf
