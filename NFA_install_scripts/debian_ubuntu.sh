@@ -1,7 +1,7 @@
 
 
 sudo apt install git graphviz pdftk python3-lark fonts-linuxlibertine \
-  python3-pyslp idle
+  python3-pylsp idle
 
 # get my framework, then run tests
 git clone https://github.com/vincent-hugot/NFA_Framework.git
