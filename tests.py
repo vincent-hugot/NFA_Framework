@@ -154,10 +154,6 @@ def exo_explosive_det():
     As = Ad.map(lambda q: last3(Ad,q)).visu().visu_separations()
     assert As == Ad
 
-
-# exo_explosive_det()
-
-# a b a factor
 @ann
 def exo_aba_factor():
     A = NFA( {0}, {3},
@@ -728,7 +724,5 @@ def main():
 # NFA.sanity_check()
 # from transition_deterministic_minimisation import *
 main()
-
-# exo_explosive_det()
 
 NFA.pdf_renderer.print_status()
