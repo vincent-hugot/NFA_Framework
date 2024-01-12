@@ -7,3 +7,4 @@ sudo apt install git graphviz pdftk python3-lark fonts-linuxlibertine \
 git clone https://github.com/vincent-hugot/NFA_Framework.git
 cd NFA_Framework/ || return
 ./tests.py
+xdg-open VISU.pdf
