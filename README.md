@@ -1,6 +1,14 @@
 ## Instructions for use
 
-Refer to the lecture notes on Celene.
+INSA students: refer to the lecture notes on Celene.
+
+
+## Installation
+
+Linux: Use the appropriate script in NFA_install_scripts.
+
+Windows: c.f. lecture notes
+
 
 ## To build the docker image (provided by students)
 
