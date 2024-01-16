@@ -1,7 +1,7 @@
 
 
 sudo apt install git graphviz pdftk python3-lark fonts-linuxlibertine \
-  python3-pylsp idle
+  python3-pylsp idle python3-more-itertools
 
 # LaTeX: very heavy, deactivate for faster install
 #sudo apt-install texlive-extra-utils texlive-full
