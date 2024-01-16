@@ -1,3 +1,4 @@
+#!/bin/bash
 
 # update/upgrade system, then install packages
 sudo pacman -Syu

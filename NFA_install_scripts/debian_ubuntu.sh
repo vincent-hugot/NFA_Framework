@@ -1,4 +1,4 @@
-
+#!/bin/bash
 
 sudo apt install git graphviz pdftk python3-lark fonts-linuxlibertine \
   python3-pylsp idle python3-more-itertools
