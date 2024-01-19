@@ -251,7 +251,8 @@ class pdf_renderer:
         s.wake_concatenator(pdfname, **kw)
 
     def tex_compiler(s,jn,texfile, pdfname, silent, **kw):
-        r = sp.run(["pdflatex", "-halt-on-error", texfile], cwd=Path(texfile).parent, capture_output=silent)
+        r = sp.run(["pdflatex", "-interaction=nonstopmode", "-halt-on-error", texfile],
+                   cwd=Path(texfile).parent, capture_output=silent)
         assert not r.returncode, r
         if sh.which("pdfcrop"):
             r = sp.run(["pdfcrop", f := Path(texfile).with_suffix(".pdf"), s.pdf_name(jn)], capture_output=True)
