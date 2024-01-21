@@ -434,16 +434,14 @@ class NFA:
                     # print(f"{Qsd=}")
                     Qs = set() if set() in Qsd.values() else { tuple( (c,a) for c in C for a in Qsd[c] ) }
                     # print(f"{Qs=}")
-
                     newrules |= {(P,dt,Q) for Q in Qs if filter(A, P, dt, Q)} - A.Δ
             if not newrules:
                 A.F = { Q for Q in A.Q if all( q in C[c].F for c,q in Q ) }
             else:
                 A.add_rules(newrules)
-            # print(repr(A.visu()))
             hook(A)
             if stopper and stopper(A): return "STOP"
-        R = NFA(I, (), (),worder=tuple).growtofixpoint(grow,record_steps)
+        R = NFA(I, worder=tuple).growtofixpoint(grow,record_steps)
         if nice:
             assert not record_steps, "Steps visualisation incompatible with dnice mapping"
             R = R.dnice()
