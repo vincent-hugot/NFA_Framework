@@ -366,7 +366,7 @@ def PP(x,name=""):
     print(f"PP {name}: ",x)
     return x
 
-def defcst(*l,namespace=globals()):
+def defcst(namespace, *l):
     """define global constants X containing "X" (capitalised)"""
     d = {s:s.capitalize() for s in l}
     namespace.update(d)
