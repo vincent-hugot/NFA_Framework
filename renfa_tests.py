@@ -6,6 +6,9 @@ NFA.clear()
 NFA.visutext("Thompson Example from Lectures")
 eg_lec = (E("ab") | E("")).star().show_all()
 
+for w in eg_lec[:100]: assert w in eg_lec
+eg_lec.nfa.run("abab") # slight rendering problems with epsilon
+
 NFA.visutext("Simplify Expressions (Exercise)")
 
 a, b, eps = E("a"), E("b"), E("")

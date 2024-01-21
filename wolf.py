@@ -38,7 +38,8 @@ NFA.visutext("Naïve method")
 # Creates a PDF page with that text.
 
 FWGC_Problem = NFA(
-    {A},            # initial states
+    {A},            # initial state: all on left bank
+    {fset()},       # final state: none on left bank (=> all on right bank)
     name="FWGC",
     worder=tuple
     # Since the "letters" of our automaton are not going to be actual letters
@@ -77,7 +78,6 @@ def growfarmer(Aut : NFA):
 FWGC_Problem.growtofixpoint(growfarmer, record_steps=True)
 # generate transitions until nothing left to do
 
-FWGC_Problem.F = {fset()}
 # set final states
 
 NFA.visutext("Raw solution:")
@@ -164,3 +164,6 @@ P.dnice(f="groups",  g="systems").visu()
 # compact visualisation of states and transitions.
 # Not terribly important, but think about it when you have
 # large, hard-to-read graphs
+
+
+NFA.pdf_renderer.print_status() # progress indicator for PDF rendering

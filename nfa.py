@@ -164,7 +164,7 @@ class NFA:
         safety = 0 # count unproductive loops to avoid infinites if empty lang
         while True:
             acc = { w for (w,p) in runs
-                    if p in s.F }
+                    if p in s.F } # should redo like BUTA
             for w in acc: yield w; safety = 0 # loop has been productive
             runs = { (w+str(a) if s.worder is str else w+(a,) , q)
                      for (w,p) in runs
@@ -182,7 +182,7 @@ class NFA:
             yield w
 
     # test whether langage is finite; pumping lemma
-    def is_finite(s):
+    def is_finite(s): # should just test existence of non epsilon loop
         for w in s.lang():
             if len(w) >= len(s.Q): return False
         return True
@@ -582,7 +582,7 @@ class NFA:
 
     def run(s,w,used_states=True,**k):
         """visualise a run on w; params as visu"""
-        dmod={} ; e = s.I ; u = s.worder()
+        dmod={} ; e = s(s.worder()) ; u = s.worder()
         for a in w+'Δ' if s.worder is str else w+('Δ',) : # final end-of-word unlikely symbol
             dmod.update({ q: 'color="#BB0000" fillcolor="#BB0000" penwidth=2 fontcolor=white' for q in e })
             s.visu(dmod=dmod, comment="/R:"+str(u),**k)
@@ -593,13 +593,10 @@ class NFA:
                          'color="#AA0000" fontcolor="#BB0000"'
                      for (k,v) in dmod.items()  }
             if not used_states: dmod={}
-            dmod.update({ (p,b,q):
-                              'color="#BB0000" penwidth=1.2 fontcolor="#BB0000"'
-                          for p,b,q in s.Δ if p in e and b == a  })
-            e = { q for p,b,q in s.Δ if p in e and b == a }
+            dmod.update({ (p,b,q): 'color="#BB0000" penwidth=1.2 fontcolor="#BB0000"'
+                          for p,b,q in s.Δ if p in e and (not b or b == a)  })
+            e = s(u)
         return s
-
-
 
     # returns epsilon-free version of automaton
     def rm_eps(s,closures=False):

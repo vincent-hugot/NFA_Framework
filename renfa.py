@@ -24,14 +24,17 @@
 
 from dataclasses import dataclass
 from nfa import *
+from functools import cached_property
 
-class VOID: pass
+class _RE: pass
+
+class VOID(_RE): pass
 
 @dataclass
-class WRD: w: str
+class WRD(_RE): w: str
 
 @dataclass
-class BinOp:
+class BinOp(_RE):
     l: object
     r: object
 
@@ -42,7 +45,7 @@ class CONCAT (BinOp):
     symb = ""
 
 @dataclass
-class STAR: e : object
+class STAR(_RE): e : object
 
 def needsparent(s): return len(s) > 1 and s[0]+s[-1] != "()"
 
@@ -89,7 +92,8 @@ class E:
         match args:
             case []: s.e = VOID()
             case [str() as x] : s.e = WRD(x)
-            case [_ as x]: s.e = x
+            case [_RE as x]: s.e = x
+            case _: assert 0
 
     def __repr__(s):
         x = restr(s.e)
@@ -100,14 +104,21 @@ class E:
     def star(s):        return E(STAR(s.e))
 
     def MYT(s): return reaut(s.e).named(f"{s}") # McNaughton–Yamada–Thompson
+
+    @cached_property
     def nfa(s): return s.MYT()
 
-    def mini(s): return s.MYT().rm_eps().trim().mini().renum().named(f"{s} /M")
+    @cached_property
+    def mini(s): return s.nfa.rm_eps().trim().mini().renum().named(f"{s} /M")
+
+    def __contains__(s, w): return w in s.nfa
+    def __iter__(s): return s.mini.lang()
+    def __getitem__(s,i): return s.mini.__getitem__(i)
 
     def show(s):
-        s.MYT().visu() ; s.mini().visu()
+        s.nfa.visu() ; s.mini.visu()
         return s
 
     def show_all(s):
-        s.MYT().visu().rm_eps().visu().trim().visu().dfa().visu().mini().visu().renum().visu()
+        s.nfa.visu().rm_eps().visu().trim().visu().dfa().visu().mini().visu().renum().visu()
         return s
