@@ -55,6 +55,9 @@ def ℓ0(s): return F in s if {W, G} <= s or {G, C} <= s else True
 
 def ℓ(q):  return ℓ0(q) and ℓ0(A - q)
 
+assert all( ℓ(p) for p in FWGC_Problem.I )
+# check that our initial states are licit
+
 # def ℓ(q): return True
 # Uncomment to see what happens if there are no constraints
 
@@ -77,8 +80,7 @@ def growfarmer(Aut : NFA):
 
 FWGC_Problem.growtofixpoint(growfarmer, record_steps=True)
 # generate transitions until nothing left to do
-
-# set final states
+# record_steps enables us to call .visusteps later
 
 NFA.visutext("Raw solution:")
 FWGC_Problem.visu()
