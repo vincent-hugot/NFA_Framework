@@ -397,7 +397,12 @@ def do_search_covers():
 # do_modulo_break()
 # Adrien_normal_counterexample()
 # do_past_future_analysis()
-# do_search_covers()
+do_search_covers()
 
-search_covers(Adrien_go_wok(3), 3)
+# search_covers(Adrien_go_wok(3), 3)
 
+# TODO: extend covers to step 0, 1, 2... residuals? FINALS L1.L2
+# VH: besides, use minimisation more sparsely
+# AB: exemple small NFA big MIDA (2hand VH)
+# AB: ajouter exemple wok vide
+# justif union finie de politiques deterministes

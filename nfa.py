@@ -2006,3 +2006,7 @@ class NFA:
                     if A.is_universal(): x+=1
                     if A.is_empty(): y += 1
                     z += 1
+
+
+#TODO: visualise language as a^2.... (adjustable window)
+#TODO: Q ordered set
