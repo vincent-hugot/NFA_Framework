@@ -48,6 +48,8 @@ class NFA:
 
     VISUPDF = "visu"    # name of default visualisation file
     VISULANG = 10       # default visualisation: how many language elements; zero to deactivate
+    VISULANGFILTER = ("power",3) # on each language element: raw -> as is
+                                 # (power,N) -> N+ consecutive symbols are grouped (strings only)
     VISUSIZE = True     # default visualisation of automaton's size
     VISUNAME = True     # default visualisation of automaton's name
     VISUFONT = "Libertinus Sans, Linux Biolinum, Libertinus Math, Times New Roman" # defaut fontname
@@ -155,10 +157,9 @@ class NFA:
         """generator of all words in language; small length first;
         unspecified order otherwise
         Will always terminate if finite language !
-        supports epsilon and general word transitions; will break length ordering
         :param worder: constructor for output type
         """
-        s = s.renum(smart=False).trim() # always a good idea for performance
+        s = s.renum(smart=False).rm_eps().trim() # epsilons break ordering
         runs = { (s.worder(), q) for q in s.I }
         look = s.trans_1()
         safety = 0 # count unproductive loops to avoid infinites if empty lang
@@ -173,8 +174,7 @@ class NFA:
             if safety > len(s.Q): break
 
     # iterable: over the language
-    def __iter__(s):
-        return s.lang()
+    def __iter__(s): return s.lang()
 
     def lang_up_to_len(s,n):
         for w in s.lang():
@@ -627,7 +627,8 @@ class NFA:
         res =  NFA(closs(s.I), s.F,
                    { (p,a,q)
                      for p,a in look if a != ''
-                     for q in closs(look[p,a]) },name=s.nop('ε') )
+                     for q in closs(look[p,a]) },name=s.nop('ε'),
+                   worder=s.worder )
         if closures: res.rm_eps_closures = { q:clos(q) for q in s.Q }
         return res
 
@@ -1075,6 +1076,21 @@ class NFA:
         r += ";\n\\end{tikzpicture}"
         return r
 
+    @staticmethod
+    def _lang_filter(s,mode):
+        """
+        only for strings
+        mode ('power', N): 'aa...a' -> a<sup>N</sup> (N minimum)
+             'raw': just escape HTML
+        """
+        if isinstance(s, tuple): return s
+        match mode:
+            case 'power', N:
+                return "".join( f"{html.escape(a)}<sup>{n}</sup>" if (n:=len(list(g)))>=N else html.escape(a*n)
+                            for a,g in groupby(s) )
+            case 'raw': return html.escape(s)
+        assert False
+
     def visu(s,
              test=False,
              factor=None,
@@ -1087,6 +1103,7 @@ class NFA:
              nocomment=False,
              name=None,
              lang=None,
+             langfilter=None,
              rankdir=None,
              initarrow=True,
              labeljust="l",
@@ -1121,6 +1138,7 @@ class NFA:
         :param comment: top left label for graph
         :param name: name as default comment?
         :param lang: how many elements of language to display?
+        :param langfilter: filter on
         :param labeljust: l*,r,c: justif of name/size/lang text
         :param rankdir: LR or TB: direction of graphs; VISURANKDIR by default
         :param initarrow: use an arrow for initial state. Alternative: special style.
@@ -1231,8 +1249,9 @@ class NFA:
 
         lang = NFA.VISULANG if lang is None else lang
         if lang:
-            L = list(original[:lang+1])
-            comment += "<br/><br/>" + html.escape(sortstr(L[:lang])) + ("+" if len(L)>lang else "")
+            langfilter = NFA.VISULANGFILTER if langfilter is None else langfilter
+            L = [NFA._lang_filter(s, langfilter) for s in sort_states(original[:lang+1])]
+            comment += "<br/><br/>" + "{"+", ".join(str(e) for e in L[:lang])+"}" + ("+" if len(L)>lang else "")
 
         if comment and not nocomment: dotc += f"""
             label=<{comment}>;

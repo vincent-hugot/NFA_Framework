@@ -1,6 +1,7 @@
 from nfa import *
 
-NFA.VISULANG=5
+NFA.VISULANG=15
+NFA.VISULANGFILTER = ("power", 2)
 # NFA.NOVISU = True
 
 def a_in_nth_pos(n,a="a",al="ab"):
@@ -320,39 +321,36 @@ def adrien_big_counter():
     A.add_rules(cycle("a", 2*k) + cycle("b", 3*k))
     return A
 
+
 def search_covers(A0, n, ok=1, sz=1000):
-    assert A0.is_det(ignore_inits=1) # input is known MIDA
     NFA.visutext(title := f"{A0.name}, {n}"+("" if ok else "<br/>COUNTEREX"))
     A0.visu()
+    assert A0.is_det(ignore_inits=1)  # input is known MIDA
     A = A0.mini().renum().visu()
-    brnf = A.reverse().dfa().renum().reverse().named("BRNF")
 
-    brnf.visu()
+    NFB = A.reverse().dfa().renum().reverse().named("BRNF I")
+    NFR = A.reverse().named("REVERSE F")
 
-    def cut(Is) -> NFA:
-        A = brnf.copy(); A.I = Is
-        return A.mini().named(Is)
+    def cutI(Is) -> NFA:
+        A = NFB.copy(); A.I = Is
+        return A.mini().named(f"I{Is}")
 
-    mincov = min(covers(brnf.I, n), key=lambda cover: len(NFA.Union(map(cut, cover)).trans_det_Moore().Q))
-    minA = NFA.Union(map(cut, mincov)).visu().trans_det_Moore().visu().renum().visu()
+    def cutF(Is) -> NFA:
+        A = NFR.copy(); A.I = Is
+        return A.reverse().mini().named(f"F{Is}")
+
+    NFR.cut = cutF ; NFB.cut = cutI
+
+    NFs = [NF.visu() for NF in [NFR, NFB] if len(NF.I) <= 6]
+
+
+    def MIDA(NF,cover): return NFA.Union(map(NF.cut, cover)).trans_det_Moore()
+    minA = min( (MIDA(NF,c) for NF in NFs for c in covers(NF.I, n)),
+                key=lambda A:len(A.Q)).visu()
 
     assert minA == A and minA.is_det(show=1, ignore_inits=1)
     if ok: assert len(minA.Q) == min(len(A0.Q), sz), title
     return minA
-
-def search_covers2(A0, n, ok=1, sz=1000):
-    assert A0.is_det(ignore_inits=1) # input is known MIDA
-    NFA.visutext(title := f"{A0.name}, {n}"+("" if ok else "<br/>COUNTEREX"))
-    A0.visu()
-    A = A0.mini().visu()
-    AR = A.reverse().visu()
-
-    def cut(Is) -> NFA:
-        A = AR.copy(); A.I = Is
-        return A.mini().named(Is)
-    for C in powerfset(A.Q, 2, 3):
-        if len(cut(C).Q) < 6: cut(C).visu()
-    # cut({
 
 
 def Adrien_go_wok(N):
@@ -377,8 +375,8 @@ def Adrien_go_wok(N):
 def do_search_covers():
     # NFA.NOVISU = 1
     search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
-    search_covers( (NFA.of_word("#") + modulo(K := 4)
-                 | (NFA.of_word("#") + modulo(L := 3)) ).rm_eps().trim().renum().named("A broken"), 2, ok=0)
+    search_covers( ("#"+modulo(K := 2) | "#"+modulo(L := 3) ).rm_eps().trim().renum().named("A broken"),2)
+    # return
     search_covers(uniquelast("abc", 1).named("B"), 3)
     search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 6, sz=4) # overkill on 3
     search_covers(C, 2, sz=5)

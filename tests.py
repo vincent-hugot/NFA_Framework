@@ -709,7 +709,7 @@ def main():
     shuffles()
     ofset()
     isomorphisms()
-    testproducts()
+    testproducts() # DEPRECATED
     digicode()
     simplifyArdenSystem()
     ctl_tests()
@@ -727,5 +727,6 @@ def main():
 # NFA.sanity_check()
 # from transition_deterministic_minimisation import *
 main()
+
 
 NFA.pdf_renderer.print_status()
