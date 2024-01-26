@@ -231,12 +231,27 @@ class NFA:
             res.add_rules( { (p,'',q) for p in A.F for q in B.I } )
         return res
 
+    @classmethod
+    def _from_object(c,o):
+        """
+        Convert various types of objects into automata, for instance for
+        "prefix" + Automaton + ["suffix1", "suffix2"]
+        """
+        match o:
+            case str() | tuple(): return NFA.of_word(o)
+            case list() | set() : return NFA.of_set(o)
+            case c(): return o
+        return NotImplemented
+
     def __add__(s,o):
         """
-        Concatenate
-        :param o: other automaton
+        Language concatenation
+        :param o: other automaton or compatible object
         """
-        return s.concatenate(o)
+        o = NFA._from_object(o); return s.concatenate(o)
+
+    def __radd__(s,o):
+        o = NFA._from_object(o); return o.concatenate(s)
 
     def __mul__(s, n:int):
         """
@@ -244,10 +259,13 @@ class NFA:
         :param n:
         :return: automaton concatenated to itself
         """
+        if not isinstance(n, int): return NotImplemented
         if n < 0: raise ValueError
-        if n == 0: return NFA((), (), (), name=f"{s.name} * 0")
+        if n == 0: return NFA(name=f"{s.name} * 0")
         if n == 1: return s
         return (s + (s * (n - 1))).named(f"{s.name} * {n}")
+
+    def __rmul__(s,o): return s*o
 
 
 

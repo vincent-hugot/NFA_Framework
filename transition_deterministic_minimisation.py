@@ -1,6 +1,6 @@
 from nfa import *
 
-NFA.VISULANG=10
+NFA.VISULANG=5
 # NFA.NOVISU = True
 
 def a_in_nth_pos(n,a="a",al="ab"):
@@ -13,11 +13,11 @@ def a_in_nth_pos(n,a="a",al="ab"):
 def uniquelast(al, n):
     """the last n letters are unique in word"""
     return NFA({f"{a}0" for a in al},
-               {f"{a}{n}" for a in al },
+               {n},
                { (f"{a}0", b ,  f"{a}0")
                     for a in al
                     for b in set(al) - {a} } |
-               { (f"{a}{k}", a ,  f"{a}{k+1}")
+               { (f"{a}{k}", a , (f"{a}{k+1}" if k<n-1 else n) )
                     for a in al
                     for k in range(n) },
                name=f"unique_last({al=},tail={n})"
@@ -184,7 +184,7 @@ def adrien_periods(N):
     # Le DFA minimal pour ce langage doit garder en mémoire les n dernières lettres lues. C'est nécessairement exponentiel.
     A = NFA(range(N), (), {
         r for p in range(N - 1) for r in [(p, x, (p + 1) % N) for x in "ab"]
-    }, name=f"Adrien {N=}")
+    }, name=f"Adrien Periods {N=}")
 
     def no(a):
         def q(n): return f"{a}{n}"
@@ -237,7 +237,7 @@ Adrien_non_unique_minimal = NFA.spec("""
     0 # 0 a 1 b 2
     1 b 2
     2 a 1
-    """, "Adrien Counter 1")
+    """, "Adrien non unique minimal")
 
 def Adrien_normal_counterexample():
     # NFA.NOVISU = 1
@@ -245,7 +245,7 @@ def Adrien_normal_counterexample():
     A = Adrien_non_unique_minimal.visu()
     A.mini().visu()
 
-    B = A.copy().named("Adrien Counter 2"); B.I = {0,2}
+    B = A.copy().named("Adrien normal counterexample"); B.I = {0,2}
     B.visu().mini().visu()
 
     assert A==B
@@ -320,21 +320,12 @@ def adrien_big_counter():
     A.add_rules(cycle("a", 2*k) + cycle("b", 3*k))
     return A
 
-def search_covers(A0, n):
-    NFA.visutext(f"{A0.name}, {n}")
+def search_covers(A0, n, ok=1, sz=1000):
+    assert A0.is_det(ignore_inits=1) # input is known MIDA
+    NFA.visutext(title := f"{A0.name}, {n}"+("" if ok else "<br/>COUNTEREX"))
     A0.visu()
-    A = A0.mini().visu() # unneeded, but just for info
-    # A = A0.copy() # for big counter
+    A = A0.mini().renum().visu()
     brnf = A.reverse().dfa().renum().reverse().named("BRNF")
-
-    # brnf = NFA.union(*(A.past(q).mini() for q in A.F)).trans_det_Moore()
-    # brnf = NFA.union(*(A.future(q).mini() for q in A.I)).trans_det_Moore()
-
-    # brnf = A.copy() # attempt at resuiduals Big counter
-    # i = peek(brnf.I)
-    # brnf.add_rules( { (a, a, q)  for (p,a,q) in brnf.Δ if p==i } )
-    # brnf.I = set("abc")
-    # brnf = brnf.trim()
 
     brnf.visu()
 
@@ -346,8 +337,22 @@ def search_covers(A0, n):
     minA = NFA.Union(map(cut, mincov)).visu().trans_det_Moore().visu().renum().visu()
 
     assert minA == A and minA.is_det(show=1, ignore_inits=1)
-    # assert len(minA.Q) <= len(A0.Q) if A0.is_det(ignore_inits=1) else True
+    if ok: assert len(minA.Q) == min(len(A0.Q), sz), title
     return minA
+
+def search_covers2(A0, n, ok=1, sz=1000):
+    assert A0.is_det(ignore_inits=1) # input is known MIDA
+    NFA.visutext(title := f"{A0.name}, {n}"+("" if ok else "<br/>COUNTEREX"))
+    A0.visu()
+    A = A0.mini().visu()
+    AR = A.reverse().visu()
+
+    def cut(Is) -> NFA:
+        A = AR.copy(); A.I = Is
+        return A.mini().named(Is)
+    for C in powerfset(A.Q, 2, 3):
+        if len(cut(C).Q) < 6: cut(C).visu()
+    # cut({
 
 
 def Adrien_go_wok(N):
@@ -373,16 +378,16 @@ def do_search_covers():
     # NFA.NOVISU = 1
     search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
     search_covers( (NFA.of_word("#") + modulo(K := 4)
-                 | (NFA.of_word("#") + modulo(L := 3)) ).rm_eps().trim().renum().named("A broken"), 2)
+                 | (NFA.of_word("#") + modulo(L := 3)) ).rm_eps().trim().renum().named("A broken"), 2, ok=0)
     search_covers(uniquelast("abc", 1).named("B"), 3)
-    search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 6) # overkill on 3
-    search_covers(C, 2)
+    search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 6, sz=4) # overkill on 3
+    search_covers(C, 2, sz=5)
     search_covers(Adrien_non_unique_minimal, 3)
     search_covers(Adrien_non_unique_minimal, 2)
     search_covers(bonfante_permut(2), 2)
     search_covers(adrien_periods(3), 3)
-    search_covers(adrien_big_counter(), 2)
-    search_covers(Adrien_go_wok(3), 3)
+    search_covers(adrien_big_counter(), 2, ok=0)
+    search_covers(Adrien_go_wok(3), 3, ok=0)
 
 
 ############################

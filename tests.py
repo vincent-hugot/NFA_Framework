@@ -446,6 +446,9 @@ def decExam2020Verif():
 def concatenation():
     A = NFA.of_set({"abc", "ABC"}).renum().visu()
     B = NFA.of_set({"012", "789"}).renum().visu()
+    (A+"a"+"b").visu()
+    ("head"+A+"tail"+["XY","xy"]+{"1","2"}).visu()
+    (A*3).visu(); (3*B).visu()
 
     C = A + B
     C = C.visu()  # .renum().visu()
