@@ -45,6 +45,20 @@ def preserve(m):
     return f
 
 class NFA:
+    """
+     Nondeterministic Finite-State Automata (with ε-transitions)
+     :param I: initial states
+     :param F: final states
+     :param Δ: rules (p,a,q)
+     :param Q: additional states (if not in rules)
+     :param Σ: additional symbols (if not in rules)
+     :param name: what's its name?
+     :param trimmed: is it already trimmed? (avoid redoing it)
+     :param worder: type of the words of the language. str / tuple
+
+     :param w: NFA recognising word w
+     :param l: NFA recognising finite language l
+     """
 
     VISUPDF = "visu"    # name of default visualisation file
     VISULANG = 10       # default visualisation: how many language elements; zero to deactivate
@@ -67,18 +81,15 @@ class NFA:
 
     pdf_renderer = pdf_renderer()
 
-    def __init__(s,I=(),F=(),Δ=(),name="",Q=(),Σ=(),trimmed=False,worder=str):
-        """
-        :return: New NFA
-        :param I: initial states
-        :param F: final states
-        :param Δ: rules (p,a,q)
-        :param Q: additional states (if not in rules)
-        :param Σ: additional symbols (if not in rules)
-        :param name: what's its name?
-        :param trimmed: is it already trimmed? (avoid redoing it)
-        :param worder: type of the words of the language. str / tuple
-        """
+    def __new__(cls, *a, w=None, l=None, **k):
+        if any(x is not None for x in (w, l)): assert not a and not k
+        if w is not None: return NFA.of_word(w)
+        if l is not None: return NFA.of_set(l)
+        return super().__new__(cls)
+
+    def __init__(s,I=(),F=(),Δ=(),name="",Q=(),Σ=(),trimmed=False,worder=str,
+                 w=None, l=None):
+        if any(x is not None for x in (w,l)): return # fully built by __new__
         s.Δ = set()
         s.Σ = set(Σ)
         s._I, s._F = set(I), set(F)
@@ -266,6 +277,14 @@ class NFA:
         return (s + (s * (n - 1))).named(f"{s.name} * {n}")
 
     def __rmul__(s,o): return s*o
+
+    def star(s):
+        """Kleene star"""
+        A = s.copy()
+        i = next(fresh_gen(s.Q))
+        A.I = {i} ; A.F = {i}
+        A.add_rules( { (i,'',qi) for qi in s.I } | { (qf,'',i) for qf in s.F } )
+        return A.named(f"({s.name})*")
 
 
 
@@ -614,8 +633,9 @@ class NFA:
             e = s(u)
         return s
 
-    # returns epsilon-free version of automaton
+    @preserve
     def rm_eps(s,closures=False):
+        """returns epsilon-free version of automaton"""
         look = s.trans_2()
         def clos(p):
             s = {p}
@@ -628,7 +648,7 @@ class NFA:
                    { (p,a,q)
                      for p,a in look if a != ''
                      for q in closs(look[p,a]) },name=s.nop('ε'),
-                   worder=s.worder )
+                    )
         if closures: res.rm_eps_closures = { q:clos(q) for q in s.Q }
         return res
 
@@ -711,7 +731,7 @@ class NFA:
         n = len(w)
         return NFA({0}, {n}, { (k,w[k],k+1)
                                for k in range(n) },
-                   name = "/W:" + str(w)[:10],
+                   name = str(w)[:10],
                    trimmed=True,
                    worder=str if type(w) is str else tuple)
 
@@ -737,7 +757,7 @@ class NFA:
     @staticmethod
     def of_set(L,name=None):
         """return a NFA accepting exact finite langage"""
-        return NFA.Union(NFA.of_word(w) for w in L).setnop(name=name or "/OfSet")
+        return NFA.Union(NFA.of_word(w) for w in L).renum().setnop(name=name or sortstr(L))
 
     @preserve
     def copy(s): return NFA(s.I, s.F, s.Δ, Q=s.Q, trimmed=s._trimmed, name=s.name)
@@ -1252,7 +1272,8 @@ class NFA:
             langfilter = NFA.VISULANGFILTER if langfilter is None else langfilter
             L = [NFA._lang_filter(s, langfilter) for s in sort_states(original[:lang+1])]
             lb, rb, plus, comma = (f"<font color='brown4'>{x}</font>" for x in [*"{}+",", "])
-            comment += ("<br/><br/>" + lb + comma.join(str(e) for e in L[:lang]) + rb +
+            def eps(s): return str(s) if s != '' else "<font color='blue4'>ε</font>"
+            comment += ("<br/><br/>" + lb + comma.join(eps(e) for e in L[:lang]) + rb +
                         (plus if len(L)>lang else ""))
 
         if comment and not nocomment: dotc += f"""
@@ -1313,7 +1334,7 @@ class NFA:
     @staticmethod
     def visutext(txt,**kw):
         """create a pdf page with the given text"""
-        NFA((),(),(),name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,layout="dot",**kw)
+        NFA(name=f'<FONT POINT-SIZE="50">{txt}</FONT>').visu(lang=0,size=False,escape_name=False,layout="dot",**kw)
 
     def Brzozowski(s):
         "automaton minimisation, Brzozowski method"

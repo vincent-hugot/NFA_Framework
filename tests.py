@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import toolkit
-from nfa import NFA
-from toolkit import powerfset, pdf_renderer, fset
+from nfa import NFA, powerfset, pdf_renderer, fset
+from renfa import E
 
 #####################################
 NFA.clear()
@@ -683,7 +683,7 @@ def concat_changes_test():
         for prepend in 0,1:
             for i in range(3):
                 NFA.visutext(f"{target} {prepend=} n°{i}", pdfname=target, pdfprepend=prepend)
-
+@ann
 def repr_test():
     A = NFA.nsprod(
             NFA.of_word("abc").map(f=toolkit.num_to_str).named("A"),
@@ -692,6 +692,11 @@ def repr_test():
     r = A.repr()
     B = eval(r).visu()
     assert A==B
+
+@ann
+def smart_visu_lang():
+    A = NFA(l=["aa", "bb"]).star().visu().mini().visu()
+    B = NFA(w="ab").visu().star().visu()
 
 
 
@@ -723,10 +728,12 @@ def main():
     # concat_changes_test() # writes to other file
     repr_test()
     fonts()
+    smart_visu_lang()
 
 # NFA.sanity_check()
 # from transition_deterministic_minimisation import *
 main()
+# smart_visu_lang()
 
 
 NFA.pdf_renderer.print_status()
