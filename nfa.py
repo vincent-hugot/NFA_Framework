@@ -1251,7 +1251,9 @@ class NFA:
         if lang:
             langfilter = NFA.VISULANGFILTER if langfilter is None else langfilter
             L = [NFA._lang_filter(s, langfilter) for s in sort_states(original[:lang+1])]
-            comment += "<br/><br/>" + "{"+", ".join(str(e) for e in L[:lang])+"}" + ("+" if len(L)>lang else "")
+            lb, rb, plus, comma = (f"<font color='brown4'>{x}</font>" for x in [*"{}+",", "])
+            comment += ("<br/><br/>" + lb + comma.join(str(e) for e in L[:lang]) + rb +
+                        (plus if len(L)>lang else ""))
 
         if comment and not nocomment: dotc += f"""
             label=<{comment}>;
