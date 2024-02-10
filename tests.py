@@ -615,7 +615,7 @@ def _AMC():
     A.dfa().AMC(Qadd=powerfset(A.Q) - {fset()})
 
 @ann
-def process_language_v1():
+def process_language_Peterson():
     NFA.VISULANG = 0
     As, sync = NFA.processes("""
     bool        W0   := False   # process 0 wants critical access
@@ -646,7 +646,7 @@ def process_language_v1():
     print(sync)
     for A in As: A.visu()
     res = NFA.nsprod(*As, sds=sync)
-    res.visu()
+    res.dnice().visu()
     NFA.VISULANG = 10
 
 @ann
@@ -724,7 +724,7 @@ def main():
     verif_mini_prog()
     synchro_prod_poly_example()
     hard_minimisation()
-    process_language_v1()
+    process_language_Peterson()
     # concat_changes_test() # writes to other file
     repr_test()
     fonts()
@@ -732,8 +732,7 @@ def main():
 
 # NFA.sanity_check()
 # from transition_deterministic_minimisation import *
-main()
-# smart_visu_lang()
-
+# main()
+smart_visu_lang()
 
 NFA.pdf_renderer.print_status()

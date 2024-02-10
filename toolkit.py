@@ -19,7 +19,7 @@
 import random
 from itertools import *
 from more_itertools import set_partitions
-from functools import reduce
+from functools import reduce, cache, wraps
 import subprocess as sp
 import math
 from math import sqrt
@@ -32,6 +32,7 @@ from contextlib import contextmanager
 from pathlib import Path
 from concurrent.futures import ThreadPoolExecutor
 from time import sleep
+import time
 from threading import Lock
 
 term_reset= "\u001b[0m"
@@ -84,14 +85,16 @@ def fresh_gen(s=(), trans=lambda x:x):
         if x not in s: yield x
         k+=1
 
-def base_case_gen(g,b):
-    """prefixes g with b if g is empty, without consuming g"""
-    try:
-        gi = iter(g)
-        i = next(gi)
-        return chain([i],gi)
-    except StopIteration:
-        return iter([b])
+# def base_case_gen(g,b):
+#     """prefixes g with b if g is empty, without consuming g"""
+#     try:
+#         gi = iter(g)
+#         i = next(gi)
+#         return chain([i],gi)
+#     except StopIteration:
+#         return iter([b])
+
+
 
 if __debug__:
     __g = fresh_gen((1, 3, 5))
@@ -108,6 +111,15 @@ def try_eval(s):
         assert type(r) in (str, int, float)
         return r
     except: return s
+
+def timecalls(f):
+    """print time taken for each call, with arguments"""
+    @wraps(f)
+    def w(*a, **k):
+        s = time.perf_counter(); r = f(*a, **k); e = time.perf_counter()
+        print(f'{e - s:.3f}s {f.__name__}{a} {k}')
+        return r
+    return w
 
 class fset(frozenset): # less ugly writing in subset constructions
     def __init__(s,*args): super().__init__()
@@ -557,3 +569,55 @@ class disjoint_sets:
 # DS.union("d", "e")
 # # DS.union("a", "d")
 # print(DS.parent, DS.classes())
+
+@cache
+def word_decompositions(w : str): # aaa -> aaa a,aa aa,a a,a,a
+    if len(w) <= 1: return fset([(w,)])
+    z = word_decompositions
+    def subs(i): return fset(p+s for p in z(w[:i]) for s in z(w[i:]))
+    return fset([(w,)]) | fset.union(*(subs(i) for i in range(1,len(w))))
+
+def word_factorisations(w): # aaa -> aaa1 a1aa1 aa1a1 aaa3 (not a2a1 !) ; block list
+    def factorise(d): return tuple((c, len(list(g))) for c, g in groupby(d))
+    return ( factorise(d) for d in word_decompositions(w) if d != (w,) )
+
+def cost_of_factor(fact): # [ (u,n), (f,n),...]
+    return sum( cost_of_block(b) for b in fact )
+
+@cache
+def cost_of_block(b): # (u,n) or  (f,n)
+    match b:
+        case (str() as u,n):
+            if len(u) == 1: return 1 + (0.5 if n>=2 else 0)
+            else: return cost_of_factor(opt_factor(u)) + (0.5 if n>=2 else 0)
+        case (tuple() as f, n):
+            return cost_of_factor(f)  + (0.5 if n>=2 else 0)
+        case _: assert False, b
+
+@cache
+def opt_block(b): # block -> ftree TODO FTree Hedge
+    match b:
+        case (str() as u, n):
+            if len(u) == 1: return b
+            else:
+                match opt_factor(u):
+                    case [(f,m)]: return (f,n*m)
+                    case o: return (o,n)
+        case _: assert False, b
+
+@cache
+def opt_factor(w): # w -> ftree list
+    if len(w) <= 1: return (w,1)
+    candidates = (tuple(map(opt_block,f)) for f in word_factorisations(w))
+    return min( candidates, key=cost_of_factor)
+
+if __name__ == "__main__":
+    for w in "", "a", "aa", "abb", "aaa", "aaabaa", "ab"*6, "aqkjfkusdjkdd", "baabaabbb", "pre"+("c"+"ab"*2)*2+"suf":#, "aaabb", "ababab", "abcabc":
+        # print(w,  word_decompositions(w), word_factorisations(w) )
+        print(w, end='\t')
+        # print(word_decompositions(w))
+        # print(word_factorisations(w))
+        print("OPT", opt_factor(w))
+
+    print( [cost_of_block(b) for b in [(('aa',1)), ("a",1), ("a",2)] ])
+

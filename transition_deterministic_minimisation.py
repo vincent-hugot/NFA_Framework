@@ -321,7 +321,7 @@ def adrien_big_counter():
     A.add_rules(cycle("a", 2*k) + cycle("b", 3*k))
     return A
 
-
+@timecalls
 def search_covers(A0, n, ok=1, sz=1000):
     NFA.visutext(title := f"{A0.name}, {n}"+("" if ok else "<br/>COUNTEREX"))
     A0.visu()
@@ -374,8 +374,9 @@ def Adrien_go_wok(N):
 
 def do_search_covers():
     # NFA.NOVISU = 1
-    search_covers((modulo(K := 2) | modulo(L := 3)).renum().named("A"), 2)
-    search_covers( ("#"+modulo(K := 2) | "#"+modulo(L := 3) ).rm_eps().trim().renum().named("A broken"),2)
+    search_covers((modulo(2) | modulo(3)).renum().named("A"), 2)
+    search_covers( ("#"+modulo(2) | "#"+modulo(3) ).rm_eps().trim().renum().named("prefix+A"),2)
+    search_covers(((modulo(2)+"#").mini() | (modulo(3)+"#").mini()).trans_det_Moore().renum().named("A+suffix"), 2)
     # return
     search_covers(uniquelast("abc", 1).named("B"), 3)
     search_covers(C := NFA.union(*(a_in_nth_pos(i) for i in [1, 2, 3])).named("C"), 6, sz=4) # overkill on 3
@@ -409,3 +410,6 @@ do_search_covers()
 # AB: exemple small NFA big MIDA (2hand VH)
 # AB: ajouter exemple wok vide
 # justif union finie de politiques deterministes
+
+
+NFA.pdf_renderer.print_status()
