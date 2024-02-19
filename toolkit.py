@@ -85,16 +85,12 @@ def fresh_gen(s=(), trans=lambda x:x):
         if x not in s: yield x
         k+=1
 
-# def base_case_gen(g,b):
-#     """prefixes g with b if g is empty, without consuming g"""
-#     try:
-#         gi = iter(g)
-#         i = next(gi)
-#         return chain([i],gi)
-#     except StopIteration:
-#         return iter([b])
-
-
+def base_case_gen(g,b):
+    """prefixes g with b if g is empty, without consuming g"""
+    try:
+        gi = iter(g); i = next(gi)
+        return chain([i],gi)
+    except StopIteration: return iter([b])
 
 if __debug__:
     __g = fresh_gen((1, 3, 5))

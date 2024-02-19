@@ -732,7 +732,7 @@ def main():
 
 # NFA.sanity_check()
 # from transition_deterministic_minimisation import *
-# main()
-smart_visu_lang()
+main()
+# smart_visu_lang()
 
 NFA.pdf_renderer.print_status()
