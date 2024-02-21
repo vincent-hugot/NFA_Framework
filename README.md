@@ -33,8 +33,7 @@ Refer to the lecture notes on Celene, section on Lab Classes.
 
 ## Contributing
 
-The _**install scripts,
-licence, and readme**_ really do "live" in this repository; by all means submit
+The _**install scripts and readme**_ really do "live" in this repository; by all means submit
 pull requests (PR) for those.
 
 However, as far as the Python files go, this is merely a read-only image of a few files
