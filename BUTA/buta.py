@@ -285,6 +285,9 @@ class TRS:
     def vars_of(s, t):
         """set of variables of rule term"""
         return set(filter(s.vars, t.leaves()))
+
+    @property
+    def size(s): return len(s.rules)
             
 
 

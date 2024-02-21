@@ -137,71 +137,9 @@ class ffset(fset): # only for converting into something with a correct repr
 
 assert str(fset({1,2,3})) == '{1, 2, 3}'
 
-def __DEPRECATED_do_dot(pdfname,pdfprepend=False, pdfoverwrite=False, store=None, renderer="dot", renderer_options = [],
-           pdfcrop=False):
-    assert sh.which("pdftk")
-    assert sh.which(renderer)
-    r = sp.run([renderer] + renderer_options + ["-Tpdf", pdfname + ".dot", f"-o{pdfname}_fig.pdf"],capture_output=True)
-    if r.returncode: print(r)
-    assert not r.returncode if renderer == "dot" else True
-    # sfdp bad build Error: remove_overlap: Graphviz not built with triangulation library
-    if store: copy(f"{pdfname}_fig.pdf", f"{store}.pdf")
-    if pdfcrop and sh.which("pdfcrop"):
-        r = sp.run(["pdfcrop", f"{pdfname}_fig.pdf", f"{pdfname}_figc.pdf"],capture_output=True)
-        if r.returncode: print(r)
-        sh.move(f"{pdfname}_figc.pdf",f"{pdfname}_fig.pdf")
-    if os.path.isfile(pdfname + ".pdf"):
-        if pdfoverwrite:
-            sh.move(f"{pdfname}_fig.pdf", f"{pdfname}.pdf")
-        else:
-            sp.run(["cp", pdfname + ".pdf", pdfname + "_copy.pdf"])
-            if pdfprepend:
-                sp.run(["pdftk", pdfname + "_fig.pdf", pdfname + "_copy.pdf", "cat", "output", pdfname + ".pdf"])
-            else:
-                sp.run(["pdftk", pdfname + "_copy.pdf", pdfname + "_fig.pdf", "cat", "output", pdfname + ".pdf"])
-    else:
-        sh.move(f"{pdfname}_fig.pdf", f"{pdfname}.pdf")
-        sp.run(["touch", pdfname + ".pdf"]) # force viewer to update; with mv it doesn't always
-        # todo: Path('path/to/file.txt').touch()
-    for f in [f"{pdfname}_{x}.pdf" for x in ("fig", "copy")]:
-        if os.path.isfile(f): os.remove(f)
-    # maybe spool temp files in memory: https://docs.python.org/3.6/library/tempfile.html
-
-def __DEPRECATED_do_tex(tex,name,pdfprepend,silent,testfile="__NFA_standalone__.tex"):
-    if not sh.which("pdflatex"):
-        print("\ndo_tex: pdflatex is not installed: aborting")
-        return
-    with tempfile.TemporaryDirectory(prefix="NFA_do_tex") as td:
-        with open(td+"/x.tex",'w') as f:
-            f.write("\documentclass{minimal}\n" +
-                "\\usepackage{tikz}\n\\usetikzlibrary{backgrounds,arrows,automata,shadows,matrix,decorations,shapes,calc,positioning}" +
-                "\n\\tikzset{every state/.append style={minimum size=1.5em,\n  circular glow={fill=gray!30},fill=blue!2!white\n}}" +
-                "\n\\tikzset{accepting/.append style={fill=green!2,circular glow={fill=gray!30}}}\n\\tikzset{fsa/.style={baseline=-.5ex,semithick,>=stealth',"+
-                "\n  shorten >=1pt,auto,node distance=3.5em,initial text=}}\n\\tikzset{fst/.style={fsa,node distance=5em}}"+
-                "\n\\tikzset{mathnodes/.style={execute at begin node=\\(,execute at end node=\\)}}" +
-                "\n\\begin{document}\n"+tex+"\n\end{document}")
-        testfile and sh.copy(td+"/x.tex",testfile)
-        r = sp.run(["pdflatex", "-halt-on-error", "x.tex"],cwd=td,capture_output=silent)
-        if r.returncode: print(r)
-        if sh.which("pdfcrop"):
-            sp.run(["pdfcrop", "x.pdf", "xc.pdf"], cwd=td,capture_output=silent)
-            sh.move(td + "/xc.pdf", name + "_fig.pdf")
-        else:
-            print("\ndo_tex: pdfcrop is not installed: no cropping shall be done")
-            sh.move(td + "/x.pdf", name + "_fig.pdf")
-
-        assert not r.returncode
-        if os.path.isfile(name + ".pdf"):
-            sh.copy(name+".pdf", name + "_copy.pdf")
-            if pdfprepend:
-                sp.run(["pdftk", name + "_fig.pdf", name + "_copy.pdf", "cat", "output", name + ".pdf"])
-            else:
-                sp.run(["pdftk", name + "_copy.pdf", name + "_fig.pdf", "cat", "output", name + ".pdf"])
-        else:
-            sh.move(name + "_fig.pdf", name + ".pdf")
-            sp.run(["touch", name + ".pdf"])
-
-
+def transpose(m):
+    """return transposed matrix"""
+    return list(zip(*m))
 
 class pdf_renderer:
     """
@@ -493,13 +431,11 @@ def cd(dir):
     finally: os.chdir(currdir)
 
 @contextmanager
-def elapsed(msg="ELAPSED:", v=True):
+def elapsed(msg="ELAPSED:", v=0):
     from timeit import default_timer
-    start = default_timer()
-    elapser = lambda: default_timer() - start
-    yield lambda: elapser()
-    end = default_timer()
-    elapser = lambda: end-start
+    start = default_timer(); running = 1
+    yield lambda: (default_timer() if running else end) - start
+    end   = default_timer(); running = 0
     if v: print(msg, end-start)
 
 def texesc(s):
