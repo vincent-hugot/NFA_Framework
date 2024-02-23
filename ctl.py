@@ -14,7 +14,7 @@
 
 A terrible implementation for pedagogical purposes.
 
-WILL BE REDONE SOON WITH PROPER STRUCTURAL PATTERN MATCHING
+WILL BE REDONE SOON WITH PROPER STRUCTURAL PATTERN MATCHING (c.f. renfa.py for an example)
 
 Use:
 from ctl import AND, OR, NOT, TT, FF, IMPLIES, XOR, EX, EU, AU, AX, AG, EG, AF, EF, check, checkvisu
