@@ -110,6 +110,8 @@ class NFA:
     @I.setter
     def I(s, I): s._I = set(I); s.Q |= s._I
 
+    # TODO: propery setter for |= on delta
+
     def add_rule(s,p,a,q,final=False):
         s.Δ.add((p,a,q))
         s.Σ.add(a)

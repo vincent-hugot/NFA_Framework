@@ -242,12 +242,10 @@ def testproducts():
 @ann
 def digicode():
     NFA.VISULANG = 15
-    Digi = NFA.of_word("123").visu()
 
-    # for c in "01234567890":
-    for c in "x123":
-        Digi.add_rule(0,c,0)
-    Digi.name="Digicode"
+    Digi = NFA.of_word("123").named("Digicode").visu()
+    Digi.add_rules( (0, str(c), 0) for c in range(1,10))
+
     Digi.texvisu("0 > 1 > 2 > 3")#.table()
     Digi.visu().dfa().visu().texvisu("0 > 1 > 2 > 3",
     "0 lb 0 3 <40,ns 0 3 < 1 2 >70,ns,~ 0",renum=True)
@@ -734,5 +732,6 @@ def main():
 # from transition_deterministic_minimisation import *
 main()
 # smart_visu_lang()
+
 
 NFA.pdf_renderer.print_status()
