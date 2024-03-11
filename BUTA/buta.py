@@ -168,6 +168,11 @@ class term (tuple):
         f, *st = s
         return (f, *map(term.to_tuple, st))
 
+    @property
+    def size(s): return len(s.positions_subterms())
+
+
+
 T = term.spec
 def Ts(*ts): return set(map(T,ts))
 
@@ -201,6 +206,11 @@ class trs_rule(tuple):
     def __repr__(s):
         l,r = s
         return f"{l} ⟶ {r}"
+
+    @property
+    def size(s):
+        l, r = s
+        return l.size + r.size
 
 class TRS:
     """term rewriting system (TRS)"""
@@ -287,7 +297,7 @@ class TRS:
         return set(filter(s.vars, t.leaves()))
 
     @property
-    def size(s): return len(s.rules)
+    def size(s): return sum( r.size for r in s.rules )
             
 
 
