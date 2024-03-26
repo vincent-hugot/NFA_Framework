@@ -85,7 +85,7 @@ class E:
         match args:
             case []: s.e = VOID()
             case [str() as x] : s.e = WRD(x)
-            case [_RE as x]: s.e = x
+            case [_RE() as x]: s.e = x
             case _: assert 0
 
     def __repr__(s):
