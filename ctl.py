@@ -86,8 +86,8 @@ def f_tex(f):
             return f"{{{symbtex[o]} {z(g)}}}"
         case LogOps() as o, g, h:
             match [x for x in  symbtex[o].split("\\") if x]:
-                case o,: return f"\p{{{z(g)} \\{o} {z(h)}}}"
-                case q,o: return f"\\{q}\p{{{z(g)} \\{o} {z(h)}}}"
+                case o,: return f"\\p{{{z(g)} \\{o} {z(h)}}}"
+                case q,o: return f"\\{q}\\p{{{z(g)} \\{o} {z(h)}}}"
                 case _: assert False, _
         case _:  assert False, _
 

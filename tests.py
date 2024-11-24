@@ -29,7 +29,7 @@ def interro201819():
     4 c 3 a 5 a 1
     """, name="interro2018-2019").visu()
     # A.table()
-    A.texvisu("0 / 1 > 3\n 0 \ 2 > 4 / 5","3 ns,c 2 4 ne,c 1 2 lb 2")
+    A.texvisu("0 / 1 > 3\n 0 \\ 2 > 4 / 5","3 ns,c 2 4 ne,c 1 2 lb 2")
     A = A.dfa().visu().texvisu(renum=True)
 
     A.mini().visu().texvisu(renum=True)
@@ -256,6 +256,15 @@ def digicode():
 @ann
 def exoEqualRegexp():
     A = NFA.spec("""
+    0
+    1
+    0 a 0 eps 1
+    1 b 1""", "A").visu()
+    A.mini().visu()
+    A.rm_eps().visu()
+    A.rm_eps2().visu()
+
+    A = NFA.spec("""
     1 3
     4
     1 a 2 a 3
@@ -366,7 +375,7 @@ def ctl_tests():
     """, name="Katoen examples",style="ts").visu()
 
     labels = { 0: {p}, 1:{p,q}, 2:{q}, 3:{p} }
-    kat.texvisu("0 \ 2 / 1 > 3", "3 lb 3")
+    kat.texvisu("0 \\ 2 / 1 > 3", "3 lb 3")
 
     for f in [
         q,
@@ -418,7 +427,7 @@ def decExam2020Verif():
     P = decrement(4,{1,2,4}).visu()
     P.texvisu(defbend="bend left")
     P.texvisu(qloc="4 / 3 \\ 2 / 1 \\ 0",bends="4 >40,~ 0")
-    P.texvisu(qloc="4 \ 3 / 2 \ 1 / 0", bends="4 < 0")
+    P.texvisu(qloc="4 \\ 3 / 2 \\ 1 / 0", bends="4 < 0")
     decrement(5, set(range(1,5+1))).visu()
     decrement(5, (1,2,3)).visu()
 
@@ -695,6 +704,9 @@ def repr_test():
 def smart_visu_lang():
     A = NFA(l=["aa", "bb"]).star().visu().mini().visu()
     B = NFA(w="ab").visu().star().visu()
+
+
+
 
 
 

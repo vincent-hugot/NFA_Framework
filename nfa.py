@@ -506,10 +506,17 @@ class NFA:
         return  s.map(f,g)
 
 
-    def label(s, l, f_str):
+    def label(s, l, l_str):
+        """
+        Given a labelling for each state, return a representation of the NFA
+        where labels are transformed into strings by l_str, and presented one per line.
+        Used in particular for CTL labelling
+        :param l: dict { q in A.Q : set of labels }
+        :param l_str: label -> str
+        """
         bs = '\\'
         def disp(q):
-            return f"{q}:{bs}n{f'{bs}n'.join(f_str(phi) for phi in l.get(q, ()))}"
+            return f"{q}:{bs}n{f'{bs}n'.join(l_str(phi) for phi in l.get(q, ()))}"
         return s.map(f=lambda q:disp(q)).named(s.nop("λ"))
 
 
@@ -645,6 +652,10 @@ class NFA:
                     )
         if closures: res.rm_eps_closures = { q:clos(q) for q in s.Q }
         return res
+
+    @preserve
+    def rm_eps2(s, closures=False):
+        return s.reverse().rm_eps(closures).reverse().named(s.nop('ε2'))
 
 
     def __call__(s,w,Q=None):
@@ -1492,15 +1503,15 @@ class NFA:
         :param mode: function of str or "return", default=print
         :return: tex table for Moore algorithm
         """
-        cid='c<{\ \ }'
+        cid=r'c<{\ \ }'
         bs = "\\"
         def esc(s):
             return "".join('\\'+a if a in ('{','}') else a for a in str(s))
-        macro = "\\newcommand{\RNum}[1]{\\uppercase\expandafter{\\romannumeral #1\\relax}}\n"
+        macro = "\\newcommand{\\RNum}[1]{\\uppercase\\expandafter{\\romannumeral #1\\relax}}\n"
         begin = ( f"% {s.name}, Moore\n"
-            f"\\begingroup{macro}\\begin{{tabular}}{{>{{\\boldmath}}l<{{\ \ \ }}{cid*len(Q)}}}\n"
+            f"\\begingroup{macro}\\begin{{tabular}}{{>{{\\boldmath}}l<{{\\ \\ \\ }}{cid*len(Q)}}}\n"
             f"""& { ' & '.join(f"{bs}boldmath${esc(q)}$" for q in Q) }  \\\\"""
-            f"\hline\n" )
+            f"\\hline\n" )
         def pp(c): return f"\\RNum{{{c+1}}}"
         for k in range(n+2):
             begin+= ("$\\varepsilon$" if not k else f"$\\#_{{{k}}}$") \
@@ -1508,9 +1519,9 @@ class NFA:
             if k == n+1: break
             for a in symbs:
                 begin += f"${esc(a)}$ & " + " & ".join(pp(c) for c in cl[k][a].values()) + "\\\\\n"
-            begin += "\hline"
+            begin += "\\hline"
 
-        end = f"\end{{tabular}}\endgroup\n"
+        end = f"\\end{{tabular}}\\endgroup\n"
         if mode == "return": return begin+end
         mode(begin+end)
 
@@ -1627,14 +1638,14 @@ class NFA:
         sy = sorted(s.Σ)
         Q = sort_states(s.Q)
         t = s.trans_2()
-        cid='c<{{\ \ }}'
+        cid=r'c<{{\ \ }}'
         bs = "\\"
         def esc(s):
             return "".join('\\'+a if a in ('{','}') else a for a in s)
         begin = ( f"% Name = {s.name}\n"
-            f"\\begin{{tabular}}{{r>{{\\boldmath}}c<{{\ \ \ }}{cid*len(sy)}}}\n"
+            f"\\begin{{tabular}}{{r>{{\\boldmath}}c<{{\\ \\ \\ }}{cid*len(sy)}}}\n"
             f"""&& { ' & '.join(f"${a}$" if a else f"${bs}eps$" for a in sy) }  \\\\"""
-            f"\hline\n" )
+            f"\\hline\n" )
 
         for q in Q:
             # begin+= "Initial" if q in s.I else "Final" if q in s.F else ""
@@ -1646,7 +1657,7 @@ class NFA:
             begin+= ' & '.join(f"${ ', '.join( map(esc,map(str,t[q,a])) ) }$" if t[q,a] else "" for a in sy)
             begin+= "\\\\ \n"
 
-        end = f"\hline\n\end{{tabular}}\n"
+        end = f"\\hline\n\\end{{tabular}}\n"
         if mode == "return": return begin+end
         mode(begin+end)
         return s
@@ -1896,7 +1907,7 @@ class NFA:
             qname="NFA__<AUTNAME>", stmti="Initials:", stmtf="Finals:"):
         t = ""; tr = s.trans_2()
         Q = sort_states(s.Q | set(Qadd))
-        def c(b): return "\\"+ ("c" if b else "w") +"c{}\hspace*{-2em}"
+        def c(b): return "\\"+ ("c" if b else "w") +"c{}\\hspace*{-2em}"
         # INIT FINA
         def qsetstates(states, qid, stmt):
             def c(b): return "\\" + ("c" if b else "w") + "c{"
@@ -2046,7 +2057,7 @@ class NFA:
                     # AMq = MM.quotient(lambda p,q: canon[p].iso(canon[q]))
                     if (
                       not M.is_same(MM) # todo make Br coherent
-                      or not A == M == MM == MB == A | M | MM | MB == A & M
+                      or not A == M == MM == MB == A | M | MM | MB == A & M == Ad == A.rm_eps2()
                       or not (A - M).is_empty()
                       or A.is_universal() != mA.is_empty()
                       or mA.is_universal() != A.is_empty()

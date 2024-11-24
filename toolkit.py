@@ -146,9 +146,10 @@ class pdf_renderer:
     Parallel processing pipeline for pdf rendering.
     Use do_dot and do_tex to submit render jobs.
     """
-    def __init__(s):
+    def __init__(s,max_workers=None):
         assert sh.which("pdftk")
-        s.pool = ThreadPoolExecutor()
+        assert not max_workers or max_workers >= 2 # need a concatenator process + jobs
+        s.pool = ThreadPoolExecutor(max_workers)
         s.temp_dir = tempfile.mkdtemp(prefix="NFA__Framework__")
         s.jobs = {} ; s.jobsLock = Lock()
         s.jgen = fresh_gen()
@@ -160,6 +161,7 @@ class pdf_renderer:
     def pdf_name(s, jn): return f"{s.temp_dir}/{jn}.pdf"
 
     def do_dot(s, dot_contents, pdfname, **kw):
+        if "pdfprepend" not in kw: kw["pdfprepend"] = False
         pdfname = pdfname+".pdf"
         assert sh.which(ren := kw["renderer"]), f"{ren} is not installed!"
         jn = next(s.jgen)
@@ -177,7 +179,7 @@ class pdf_renderer:
         td = Path(s.temp_dir) / f"do_tex__{jn}"
         td.mkdir(exist_ok=1)
         with open(texfile := td/"x.tex", 'w') as f:
-            f.write("\documentclass{article}\n\pagestyle{empty}\n"
+            f.write("\\documentclass{article}\n\\pagestyle{empty}\n"
                     "\\usepackage{tikz,array,pxfonts}"
                     "\\usepackage[euler-digits,euler-hat-accent]{eulervm}"
                     "\n\\usetikzlibrary{backgrounds,arrows,automata,shadows,matrix,decorations,shapes,calc,positioning}" +
@@ -185,7 +187,7 @@ class pdf_renderer:
                     "\n\\tikzset{accepting/.append style={fill=green!2,circular glow={fill=gray!30}}}\n\\tikzset{fsa/.style={baseline=-.5ex,semithick,>=stealth'," +
                     "\n  shorten >=1pt,auto,node distance=3.5em,initial text=}}\n\\tikzset{fst/.style={fsa,node distance=5em}}" +
                     "\n\\tikzset{mathnodes/.style={execute at begin node=\\(,execute at end node=\\)}}" +
-                    "\n\\begin{document}\n" + tex + "\n\end{document}")
+                    "\n\\begin{document}\n" + tex + "\n\\end{document}")
         s.check_concatenator_change(pdfname, **kw)
         with s.jobsLock: s.jobs[jn] = s.pool.submit(s.tex_compiler, jn, texfile, pdfname, **kw)
         s.wake_concatenator(pdfname, **kw)
@@ -270,7 +272,7 @@ class pdf_renderer:
         indicators = (s.jobs, s.concatenator.exception())
         assert indicators == ({}, None), indicators
 
-def rotating_timer_gen(): yield from cycle("-\|/")
+def rotating_timer_gen(): yield from cycle(r"-\|/")
 
 def flattupleL(t):
     """Flatten left-assoc single depth tuple"""
