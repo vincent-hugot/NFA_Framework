@@ -182,6 +182,7 @@ class pdf_renderer:
             f.write("\\documentclass{article}\n\\pagestyle{empty}\n"
                     "\\usepackage{tikz,array,pxfonts}"
                     "\\usepackage[euler-digits,euler-hat-accent]{eulervm}"
+                    "\\newcommand{\eps}{\ensuremath{\\varepsilon}}"
                     "\n\\usetikzlibrary{backgrounds,arrows,automata,shadows,matrix,decorations,shapes,calc,positioning}" +
                     "\n\\tikzset{every state/.append style={minimum size=1.5em,\n  circular glow={fill=gray!30},fill=blue!2!white\n}}" +
                     "\n\\tikzset{accepting/.append style={fill=green!2,circular glow={fill=gray!30}}}\n\\tikzset{fsa/.style={baseline=-.5ex,semithick,>=stealth'," +

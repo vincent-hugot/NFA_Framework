@@ -726,6 +726,7 @@ class NFA:
 
     @preserve
     def trim(s):
+        """remove all useless (inaccessible / not coaccessible) states"""
         if s._trimmed: return s.copy()
         use = s.accessibles() & s.coaccessibles()
         return s.only(use,trimmed=True)
@@ -904,6 +905,19 @@ class NFA:
         """export as Python code"""
         return f"NFA(I={repr(s.I)},F={repr(s.F)},Δ={repr(s.Δ)})"
 
+    def export_spec(s):
+        """return representation as input to NFA.spec() classic style"""
+        assert "eps" not in s.Σ
+        s = s.stringify().map(g = lambda a: a if a != "" else "eps")
+        assert not any(" " in q for q in s.Q)
+        def states(Q): return " ".join(sort_states(Q)) if Q else "__"
+        r = states(s.I) + "\n" + states(s.F) + "\n"
+        l = s.trans_1()
+        for q in sort_states(s.Q):
+            r += q + " " + " ".join(f"{a} {p}" for a,p in sort_states(l[q]) ) + "\n"
+        return r
+
+
 
     def test(s, N=50):
         print(s.repr_txt(N)); return s
@@ -959,9 +973,9 @@ class NFA:
         #         if w not in B: return False
         return bool(s.mini().renum(smart=False).iso(o.mini().renum(smart=False)))
 
-    def is_same(s,o):
+    def is_same(s,o,noΣ=0):
         """is literally the exact same NFA"""
-        return s.I == o.I and s.F == o.F and s.Δ == o.Δ and s.Σ == o.Σ
+        return s.I == o.I and s.F == o.F and s.Δ == o.Δ and (noΣ or s.Σ == o.Σ)
 
     def texvisu(s,*texargs,pdfname=None,pdfprepend=None,texout=None,
                 silent=True,print_current=False,renum=False,**texkwargs):
@@ -2061,16 +2075,18 @@ class NFA:
                       or not (A - M).is_empty()
                       or A.is_universal() != mA.is_empty()
                       or mA.is_universal() != A.is_empty()
+                      or not NFA.spec(NFA.export_spec(A)).is_same(A,noΣ=1)
                       # or len(AMq.Q) != len(MM.Q) or len(Aq.Q) != len(MM.Q)
                     ):
                         print("ALERT!") ; NFA.visutext("ALERT!")
                         NFA.ERROR = A
-                        # for B in (A, Ad, Aq, MM, AMq):
-                        #     print(B.repr()); B.visu()
+                        for B in (A, NFA.spec(NFA.export_spec(A))):
+                            print(B.repr()); B.visu()
                         assert False
                     if A.is_universal(): x+=1
                     if A.is_empty(): y += 1
                     z += 1
+        print("\nTotal, Empty, Universal", z,y,x)
 
 
 #TODO: visualise language as a^2.... (adjustable window)
