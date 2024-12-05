@@ -1,4 +1,4 @@
-# VH's NFA Framework
+# VH's NFA Library
 
 This is my (Vincent Hugot) Python library for handling
 Nondeterministic Finite Automata (**NFA**).
