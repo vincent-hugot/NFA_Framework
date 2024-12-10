@@ -2056,11 +2056,13 @@ class NFA:
     def sanity_check():
         """A complete workout: tests minimisations, dfa, trim, iso, complementation, intersection, rm_eps,
         reverse, emptiness, universality, union...."""
-        x,y,z = 0,0,0
+        univ,empty,total = 0,0,0
         for Q in range(0,1+10):
             for ne in {0, Q//2} if Q else {0}:
-                for _ in range(1+50 if Q else 1):
-                    print(erase_line, Q, _,"---", x,y,z,end='', flush=True)
+                for _ in range(2+50 if Q else 1):
+                    print(erase_line, f"#{total:3} Q={Q:2} [0={empty:3}, 1={univ:3}]",
+                          sep='', end='', flush=True)
+                    if _ > 50: break # print before first test and after last
                     A = NFA.rand(Q, rand.randint(1, 4), 3, ne=ne)#.visu()
                     Ad = A.dfa()
                     M = A.Moore_old(); MM = A.Moore(); MB = A.Brzozowski()
@@ -2083,10 +2085,9 @@ class NFA:
                         for B in (A, NFA.spec(NFA.export_spec(A))):
                             print(B.repr()); B.visu()
                         assert False
-                    if A.is_universal(): x+=1
-                    if A.is_empty(): y += 1
-                    z += 1
-        print("\nTotal, Empty, Universal", z,y,x)
+                    if A.is_universal(): univ+=1
+                    if A.is_empty(): empty += 1
+                    total += 1
 
 
 #TODO: visualise language as a^2.... (adjustable window)
